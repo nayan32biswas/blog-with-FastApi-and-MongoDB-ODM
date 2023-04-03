@@ -22,7 +22,7 @@ SITE_URL = os.environ.get("SITE_URL")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-LOG_LEVEL = "DEBUG" if DEBUG is True else "INFO"
+LOG_LEVEL = "INFO" if DEBUG is True else "INFO"
 
 log_config = {
     "version": 1,

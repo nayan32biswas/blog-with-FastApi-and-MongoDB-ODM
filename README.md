@@ -21,8 +21,36 @@ Make sure you have docker installed and active.
 docker-compose up --build api
 ```
 
+### Create Indexes
+
+To create indexes run this command on separate terminals:
+
+```bash
+docker-compose run --rm api python -m app.main create-indexes
+```
+
 ## Visit API Docs
 
 Open your browser with url `http://localhost:8000/docs`.
 
 You will find all the necessary API documentation there.
+
+## Test
+
+### Test with Docker
+
+```bash
+docker-compose run --rm api ./scripts/test.sh
+```
+
+## Populate Data
+
+```bash
+docker-compose run --rm api python -m app.main populate-data --total-user 100 --total-post 100
+```
+
+## Clean Data
+
+```bash
+docker-compose run --rm api python -m app.main delete-data
+```
