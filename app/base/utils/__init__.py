@@ -17,8 +17,9 @@ def get_offset(page: int, limit: int):
 
 
 def update_partially(target, source: BaseModel, exclude=None):
+    cls = target.__class__
     update_data = source.dict(exclude_unset=True, exclude=exclude)
-    target = target.__class__(**deep_update(target.dict(), update_data))
+    target = cls(**deep_update(cls.to_mongo(target), update_data))
     return target
 
 

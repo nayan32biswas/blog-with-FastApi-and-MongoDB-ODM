@@ -7,6 +7,7 @@ from mongodb_odm import InsertOne, apply_indexes
 from mongodb_odm.connection import db
 
 from app.base.utils.decorator import timing
+from app.base.utils.string import rand_str
 from app.post.models import Comment, EmbeddedReply, Post, PostDescription, Tag
 from app.user.models import User
 from app.user.utils import get_password_hash
@@ -29,6 +30,7 @@ def create_users(N: int):
                     username=user["username"],
                     full_name=user["full_name"],
                     password=get_password_hash(user["password"]),
+                    rand_str=rand_str(31),
                     joining_date=datetime.utcnow(),
                 )
             )
@@ -40,9 +42,10 @@ def create_users(N: int):
             InsertOne(
                 User.to_mongo(
                     User(
-                        username=f"username-{i+11}",
+                        username=f"{i+11}_username",
                         full_name=fake.name(),
                         password=get_password_hash(fake.password()),
+                        rand_str=rand_str(31),
                         joining_date=datetime.utcnow(),
                     )
                 )

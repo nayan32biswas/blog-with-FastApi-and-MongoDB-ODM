@@ -35,9 +35,23 @@ class PostListOut(BaseModel):
         orm_mode = True
 
 
-class PostIn(BaseModel):
+class PostCreate(BaseModel):
     title: str = Field(max_length=255)
     short_description: Optional[str] = Field(max_length=512, default=None)
+    cover_image: Optional[str] = None
+
+    publish_at: Optional[datetime] = None
+
+    description: Optional[str] = None
+    tag_ids: List[ObjectIdStr] = []
+
+    class Config:
+        orm_mode = True
+
+
+class PostUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, max_length=255)
+    short_description: Optional[str] = Field(default=None, max_length=512)
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None

@@ -13,7 +13,14 @@ from app.user.dependencies import get_authenticated_user, get_authenticated_user
 from app.user.models import User
 
 from ..models import Post, PostDescription, Tag
-from ..schemas.posts import PostDetailsOut, PostIn, PostListOut, TagIn, TagOut
+from ..schemas.posts import (
+    PostCreate,
+    PostDetailsOut,
+    PostListOut,
+    PostUpdate,
+    TagIn,
+    TagOut,
+)
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
@@ -39,7 +46,7 @@ def get_tags(
     return {"count": tag_count, "results": results}
 
 
-@router.post("/tags", status_code=status.HTTP_201_CREATED)
+@router.post("/tags", status_code=status.HTTP_201_CREATED, response_model=TagOut)
 def create_tags(
     tag_data: TagIn,
     user: User = Depends(get_authenticated_user),
@@ -105,7 +112,7 @@ def get_short_description(description: Optional[str]):
 @router.post(
     "/posts", status_code=status.HTTP_201_CREATED, response_model=PostDetailsOut
 )
-def create_posts(post_data: PostIn, user: User = Depends(get_authenticated_user)):
+def create_posts(post_data: PostCreate, user: User = Depends(get_authenticated_user)):
     short_description = post_data.short_description
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
@@ -158,17 +165,16 @@ def get_post_details(
     return PostDetailsOut.from_orm(post)
 
 
-@router.put(
+@router.patch(
     "/posts/{post_id}", status_code=status.HTTP_200_OK, response_model=PostDetailsOut
 )
 def update_posts(
     post_id: ObjectIdStr,
-    post_data: PostIn,
-    user=Depends(get_authenticated_user_or_none),
+    post_data: PostUpdate,
+    user: User = Depends(get_authenticated_user),
 ):
     try:
         post = Post.get(filter={"_id": ObjectId(post_id), "author_id": user.id})
-        post.author = User.get({"_id": post.author_id})
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
@@ -186,7 +192,10 @@ def update_posts(
         post_description.description = post_data.description
         post_description.update()
 
-    return PostDetailsOut(**post.dict(), author=user, description=post_data.description)
+    post.author = user
+    post.description = post_data.description
+
+    return PostDetailsOut.from_orm(post)
 
 
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

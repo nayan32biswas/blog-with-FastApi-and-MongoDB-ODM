@@ -11,39 +11,35 @@ from app.base import config
 from app.main import app
 from app.user.models import User
 
+from .data import populate_dummy_data, users
+
 logger = logging.getLogger(__name__)
 client = TestClient(app)
-
-TEST_USERNAME = os.environ.get("TEST_USERNAME", "username")
-TEST_PASS = os.environ.get("TEST_PASS", "testpass")
 
 
 @pytest.fixture(autouse=True)
 def init_config():
     connect(config.MONGO_HOST)
 
-    user = User.find_one({"username": TEST_USERNAME})
-    if not user:
-        response = client.post(
-            "/api/v1/registration",
-            json={
-                "username": TEST_USERNAME,
-                "password": TEST_PASS,
-                "full_name": "Test Name",
-            },
-        )
-        assert response.status_code == status.HTTP_201_CREATED
-        user = User.get({"username": TEST_USERNAME})
+    if not User.exists({"username": users[0]["username"]}):
+        populate_dummy_data()
 
     yield None
+    # clean_data()
 
     disconnect()
 
 
 @lru_cache(maxsize=None)
+def get_user():
+    return User.get({"username": users[0]["username"]})
+
+
+@lru_cache(maxsize=None)
 def get_token():
     response = client.post(
-        "/token", data={"username": TEST_USERNAME, "password": TEST_PASS}
+        "/token",
+        data={"username": users[0]["username"], "password": users[0]["password"]},
     )
     assert response.status_code == status.HTTP_200_OK
     return response.json()["access_token"]
@@ -55,3 +51,7 @@ def get_header():
     return {
         "Authorization": f"Bearer {token}",
     }
+
+
+def get_test_file_path():
+    return os.path.join(config.BASE_DIR, "app/tests/files")
