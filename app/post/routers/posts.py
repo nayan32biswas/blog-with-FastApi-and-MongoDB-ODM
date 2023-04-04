@@ -7,8 +7,9 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from mongodb_odm import ODMObjectId
 
-from app.base.types import ObjectIdStr
+from app.base.custom_types import ObjectIdStr
 from app.base.utils import get_offset, update_partially
+from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
@@ -31,8 +32,8 @@ def get_tags(
     page: int = 1,
     limit: int = 20,
     q: Optional[str] = Query(default=None),
-    _=Depends(get_authenticated_user_or_none),
-):
+    _: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Any:
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {}
     if q:
@@ -50,7 +51,7 @@ def get_tags(
 def create_tags(
     tag_data: TagIn,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     name = tag_data.name.lower()
 
     tag, created = Tag.get_or_create({"name": name})
@@ -68,8 +69,8 @@ def get_posts(
     q: Optional[str] = Query(default=None),
     tags: List[ObjectIdStr] = Query(default=[]),
     author_id: Optional[ObjectIdStr] = Query(default=None),
-    _=Depends(get_authenticated_user_or_none),
-):
+    _: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Dict[str, Any]:
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
@@ -103,16 +104,20 @@ def get_posts(
     return {"count": post_count, "results": results}
 
 
-def get_short_description(description: Optional[str]):
+def get_short_description(description: Optional[str]) -> str:
     if description:
         return description[:200]
     return ""
 
 
 @router.post(
-    "/posts", status_code=status.HTTP_201_CREATED, response_model=PostDetailsOut
+    "/posts",
+    status_code=status.HTTP_201_CREATED,
+    response_model=PostDetailsOut,
 )
-def create_posts(post_data: PostCreate, user: User = Depends(get_authenticated_user)):
+def create_posts(
+    post_data: PostCreate, user: User = Depends(get_authenticated_user)
+) -> Any:
     short_description = post_data.short_description
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
@@ -140,8 +145,8 @@ def create_posts(post_data: PostCreate, user: User = Depends(get_authenticated_u
 @router.get("/posts/{post_id}", status_code=status.HTTP_200_OK)
 def get_post_details(
     post_id: ObjectIdStr,
-    _=Depends(get_authenticated_user_or_none),
-):
+    _: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Any:
     filter: Dict[str, Any] = {
         "_id": ObjectId(post_id),
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
@@ -166,24 +171,27 @@ def get_post_details(
 
 
 @router.patch(
-    "/posts/{post_id}", status_code=status.HTTP_200_OK, response_model=PostDetailsOut
+    "/posts/{post_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=PostDetailsOut,
 )
 def update_posts(
     post_id: ObjectIdStr,
     post_data: PostUpdate,
     user: User = Depends(get_authenticated_user),
-):
-    try:
-        post = Post.get(filter={"_id": ObjectId(post_id), "author_id": user.id})
-    except Exception:
+) -> Any:
+    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+
+    if post.author_id != user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to update this post.",
         )
 
     post = update_partially(post, post_data)
 
     post.short_description = post_data.short_description
-    if not post.short_description:
+    if not post.short_description and post_data.description:
         post.short_description = get_short_description(post_data.description)
     post.update()
 
@@ -198,17 +206,16 @@ def update_posts(
     return PostDetailsOut.from_orm(post)
 
 
-@router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/posts/{post_id}", status_code=status.HTTP_200_OK)
 def delete_post(
     post_id: ObjectIdStr,
-    user=Depends(get_authenticated_user),
-):
-    filter: Dict[str, Any] = {"_id": ObjectId(post_id), "author_id": user.id}
-    try:
-        post = Post.get(filter=filter)
-        post.delete()
-    except Exception:
+    user: User = Depends(get_authenticated_user),
+) -> Any:
+    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+
+    if post.author_id != user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to delete this post.",
         )
     return {"message": "Deleted"}

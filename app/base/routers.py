@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 
@@ -15,6 +16,6 @@ logger = logging.getLogger(__name__)
 async def create_upload_image(
     image: UploadFile = File(...),
     _: User = Depends(get_authenticated_user),
-):
+) -> Any:
     image_path = save_file(image, root_folder="image")
     return {"image_path": image_path}

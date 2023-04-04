@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import jwt
-from bson import ObjectId  # type: ignore
+from bson import ObjectId
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
 
@@ -25,11 +25,11 @@ class TokenType(str, Enum):
     REFRESH = "REFRESH"
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
@@ -37,12 +37,14 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     user = User.find_one({"username": username})
     if not user:
         return None
+    if not user.password:
+        return None
     if not verify_password(password, user.password):
         return None
     return user
 
 
-def create_access_token(data: dict):
+def create_access_token(data: Dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "token_type": TokenType.ACCESS})
@@ -50,7 +52,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-def create_refresh_token(data: dict):
+def create_refresh_token(data: Dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "token_type": TokenType.REFRESH})
@@ -63,7 +65,7 @@ invalid_refresh_token = HTTPException(
 )
 
 
-def create_access_token_from_refresh_token(refresh_token: str):
+def create_access_token_from_refresh_token(refresh_token: str) -> str:
     if not refresh_token:
         raise invalid_refresh_token
     try:
@@ -74,15 +76,20 @@ def create_access_token_from_refresh_token(refresh_token: str):
     if token_type is None or token_type != TokenType.REFRESH:
         raise invalid_refresh_token
 
-    user = User.find_one({"_id": ObjectId(payload["id"]), "rand_str": payload["r_str"]})
+    user = User.find_one(
+        {"_id": ObjectId(payload["id"]), "random_str": payload["random_str"]}
+    )
     if not user:
         raise invalid_refresh_token
 
     access_token = create_access_token(
-        data={"id": str(payload.get("id")), "r_str": str(payload.get("r_str"))}
+        data={
+            "id": str(payload.get("id")),
+            "random_str": str(payload.get("random_str")),
+        }
     )
     return access_token
 
 
-def provide_token(user_id: ObjectId):
+def provide_token(user_id: ObjectId) -> str:
     return create_access_token({"id": str(user_id)})

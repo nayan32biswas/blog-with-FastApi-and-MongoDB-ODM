@@ -12,7 +12,7 @@ NEW_PASS = "new-pass"
 NEW_FULL_NAME = "Full Name"
 
 
-def test_file_upload():
+def test_file_upload() -> None:
     image_path = f"{get_test_file_path()}/atom.jpg"
 
     with open(image_path, "rb") as f:

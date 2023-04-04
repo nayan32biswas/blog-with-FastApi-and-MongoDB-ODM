@@ -18,12 +18,12 @@ app: Any = FastAPI(debug=config.DEBUG)
 
 
 @app.on_event("startup")
-async def startup_db_client():
+async def startup_db_client() -> None:
     connect(config.MONGO_HOST)
 
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_db_client() -> None:
     disconnect()
 
 

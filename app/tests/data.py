@@ -1,13 +1,13 @@
 import logging
 import random
 from datetime import datetime
+from typing import Dict
 
 from faker import Faker
 from mongodb_odm import InsertOne, apply_indexes
 from mongodb_odm.connection import db
 
 from app.base.utils.decorator import timing
-from app.base.utils.string import rand_str
 from app.post.models import Comment, EmbeddedReply, Post, PostDescription, Tag
 from app.user.models import User
 from app.user.utils import get_password_hash
@@ -22,7 +22,7 @@ users = [
 
 
 @timing
-def create_users(N: int):
+def create_users(N: int) -> None:
     write_users = [
         InsertOne(
             User.to_mongo(
@@ -30,7 +30,7 @@ def create_users(N: int):
                     username=user["username"],
                     full_name=user["full_name"],
                     password=get_password_hash(user["password"]),
-                    rand_str=rand_str(31),
+                    random_str=User.new_random_str(),
                     joining_date=datetime.utcnow(),
                 )
             )
@@ -45,7 +45,7 @@ def create_users(N: int):
                         username=f"{i+11}_username",
                         full_name=fake.name(),
                         password=get_password_hash(fake.password()),
-                        rand_str=rand_str(31),
+                        random_str=User.new_random_str(),
                         joining_date=datetime.utcnow(),
                     )
                 )
@@ -55,13 +55,13 @@ def create_users(N: int):
     log.info(f"{N} user created")
 
 
-def create_tags(N: int):
+def create_tags(N: int) -> None:
     write_tags = [InsertOne(Tag.to_mongo(Tag(name=fake.word()))) for _ in range(N)]
     Tag.bulk_write(requests=write_tags)
     log.info(f"{N} tag created")
 
 
-def get_post():
+def get_post() -> Dict:
     return {
         "title": fake.sentence(),
         "publish_at": datetime.utcnow(),
@@ -72,7 +72,7 @@ def get_post():
 
 
 @timing
-def create_posts(N: int):
+def create_posts(N: int) -> None:
     user_ids = [user["_id"] for user in User.find_raw(projection={"_id": 1})]
     tag_ids = [tag["_id"] for tag in Tag.find_raw(projection={"_id": 1})]
 
@@ -107,7 +107,7 @@ def create_posts(N: int):
 
 
 @timing
-def create_comments():
+def create_comments() -> None:
     user_ids = [user["_id"] for user in User.find_raw(projection={"_id": 1})]
     post_ids = [post["_id"] for post in Post.find_raw(projection={"_id": 1})]
 
@@ -140,7 +140,7 @@ def create_comments():
 
 
 @timing
-def populate_dummy_data(total_user: int = 10, total_post: int = 10):
+def populate_dummy_data(total_user: int = 10, total_post: int = 10) -> None:
     apply_indexes()
 
     log.info("Inserting data...")
@@ -151,5 +151,5 @@ def populate_dummy_data(total_user: int = 10, total_post: int = 10):
     log.info("Data insertion complete")
 
 
-def clean_data():
+def clean_data() -> None:
     db().command("dropDatabase")

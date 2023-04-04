@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import uuid4
 
 from mongodb_odm import ASCENDING, Document, Field, IndexModel
 
@@ -14,11 +15,15 @@ class User(Document):
     last_login: Optional[datetime] = None
 
     password: Optional[str] = Field(default=None)
-    # rand_str will be used to log out from all devices.
-    rand_str: Optional[str] = Field(default=None, max_length=32)
+    # random_str will be used to log out from all devices.
+    random_str: Optional[str] = Field(default=None, max_length=64)
 
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config(Document.Config):
         collection_name = "user"
         indexes = (IndexModel([("username", ASCENDING)], unique=True),)
+
+    @classmethod
+    def new_random_str(cls) -> str:
+        return str(uuid4())

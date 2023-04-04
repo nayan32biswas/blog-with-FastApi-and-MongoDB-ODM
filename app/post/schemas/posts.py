@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.base.types import ObjectIdStr
+from app.base.custom_types import ObjectIdStr
 from app.user.schemas import PublicUserListOut
 
 
