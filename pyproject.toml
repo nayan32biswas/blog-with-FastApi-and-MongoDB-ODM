@@ -15,7 +15,8 @@ pymongo = {version = "~4.3.3", extras = ["srv"]}
 python-multipart = "0.0.6"
 typer = "0.7.0"
 uvicorn = "0.21.1"
-mongodb-odm = "0.2.0"
+# mongodb-odm = "0.2.0"
+mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "typechecking" }
 bcrypt = "4.0.1"
 
 [tool.poetry.group.dev.dependencies]
