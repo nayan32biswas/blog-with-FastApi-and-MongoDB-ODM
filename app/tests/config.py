@@ -20,7 +20,7 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def init_config() -> Generator:
-    connect(config.MONGO_HOST)
+    connect(config.MONGO_URL)
 
     if not User.exists({"username": users[0]["username"]}):
         populate_dummy_data()

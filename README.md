@@ -13,13 +13,57 @@ git clone https://github.com/nayan32biswas/blog-with-FastApi-and-MongoDB-ODM.git
 cd blog-with-FastApi-and-MongoDB-ODM
 ```
 
+### [Install Poetry](https://python-poetry.org/docs/#installation){.internal-link target=\_blank}
+
+We are using poetry to manage our python package.
+
+So we need to install poetry to start project.
+
+### Install Dependency
+
+Install all dependency.
+
+```bash
+poetry install
+```
+
+### Start Mongodb Server
+
+#### [Install MongoDB](https://www.mongodb.com/docs/manual/installation/){.internal-link target=\_blank}
+
+Install mongodb by following there official doc.
+
+Start mongodb server.
+
+### Export env key
+
+```bash
+export SECRET_KEY=your-secret-key
+export MONGO_URL=mongodb://localhost:27017/blog_db
+export DEBUG=True
+```
+
+### Run Server
+
+Run backend server with `unicorn`.
+
+```bash
+poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
 ## Run with Docker
 
 Make sure you have docker installed and active.
 
+Run backend server with single command.
+
 ```bash
 docker-compose up --build api
 ```
+
+## Visit API Documentation
+
+Open your browser and visit [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ### Create Indexes
 

@@ -19,7 +19,7 @@ app: Any = FastAPI(debug=config.DEBUG)
 
 @app.on_event("startup")
 async def startup_db_client() -> None:
-    connect(config.MONGO_HOST)
+    connect(config.MONGO_URL)
 
 
 @app.on_event("shutdown")
@@ -53,6 +53,6 @@ if __name__ == "__main__":
     """CLI"""
     from app.cli import app as cli_app
 
-    connect(config.MONGO_HOST)
+    connect(config.MONGO_URL)
     cli_app()
     disconnect()
