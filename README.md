@@ -39,8 +39,16 @@ Start mongodb server.
 
 ```bash
 export SECRET_KEY=your-secret-key
-export MONGO_URL=mongodb://localhost:27017/blog_db
+export MONGO_URL=<mongodb-connection-url>
 export DEBUG=True
+```
+
+### Create Indexes
+
+Before start backend server create indexes with:
+
+```bash
+poetry run python -m app.main create-indexes
 ```
 
 ### Run Server
@@ -51,50 +59,56 @@ Run backend server with `unicorn`.
 poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+### Populate Database
+
 ## Run with Docker
 
 Make sure you have docker installed and active.
 
-Run backend server with single command.
+- `docker-compose build api` Build docker image.
+- `docker-compose run --rm api python -m app.main create-indexes` Create Indexes
+- `docker-compose up api` Run the server.
 
-```bash
-docker-compose up --build api
-```
+
+### Populate Database with Docker
+
+- `docker-compose run --rm api python -m app.main populate-data --total-user 100 --total-post 100` Populate database with 100 user and 100 post with others necessary information
+- `docker-compose run --rm api python -m app.main delete-data` Clean database if necessary.
+
 
 ## Visit API Documentation
 
 Open your browser and visit [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### Create Indexes
-
-To create indexes run this command on separate terminals:
-
-```bash
-docker-compose run --rm api python -m app.main create-indexes
-```
-
-## Visit API Docs
-
-Open your browser with url `http://localhost:8000/docs`.
-
 You will find all the necessary API documentation there.
 
 ## Test
 
-### Test with Docker
+- Start Mongodb server
+- Export env key
+- `poetry run scripts/test.sh`
+
+## Test with Docker
+
+Run project unittest with single command:
 
 ```bash
 docker-compose run --rm api ./scripts/test.sh
 ```
 
-## Populate Data
+## Contribute
 
-```bash
-docker-compose run --rm api python -m app.main populate-data --total-user 100 --total-post 100
-```
+Developers are welcome to improve this project by contributing.
 
-## Clean Data
+If you found some bug or if you can improve code we welcome you to make change.
 
-```bash
-docker-compose run --rm api python -m app.main delete-data
-```
+It's better to create an issue first. Or create a discussions.
+
+### Before create PR
+
+Before creating PR make sure you follow those steps:
+
+- Write test on your change.
+- `poetry run scripts/test.sh` Run unittest and make sure everything pass.
+- `poetry run scripts/lint.sh` Run linting script.
+- `poetry run scripts/format.sh` Run format test if any formatting required.
