@@ -13,7 +13,7 @@ from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Post, PostDescription, Tag
+from ..models import Post, Tag
 from ..schemas.posts import (
     PostCreate,
     PostDetailsOut,
@@ -126,13 +126,11 @@ def create_posts(
         author_id=user.id,
         title=post_data.title,
         short_description=short_description,
+        description=post_data.description,
         cover_image=post_data.cover_image,
         publish_at=post_data.publish_at,
         tag_ids=[ODMObjectId(id) for id in post_data.tag_ids],
     ).create()
-
-    if post_data.description:
-        PostDescription(post_id=post.id, description=post_data.description).create()
 
     post.author = user
     post.tags = [
@@ -154,15 +152,10 @@ def get_post_details(
     try:
         post = Post.get(filter=filter)
         post.author = User.get({"_id": post.author_id})
-        description = None
-        post_description = PostDescription.find_one({"post_id": post.id})
-        if post_description:
-            description = post_description.description
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
         )
-    post.description = description
     post.tags = [
         TagOut.from_orm(tag) for tag in Tag.find({"_id": {"$in": post.tag_ids}})
     ]
@@ -195,13 +188,7 @@ def update_posts(
         post.short_description = get_short_description(post_data.description)
     post.update()
 
-    post_description, _ = PostDescription.get_or_create({"post_id": post.id})
-    if post_data.description:
-        post_description.description = post_data.description
-        post_description.update()
-
     post.author = user
-    post.description = post_data.description
 
     return PostDetailsOut.from_orm(post)
 

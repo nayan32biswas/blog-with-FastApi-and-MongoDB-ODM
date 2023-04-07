@@ -6,7 +6,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.post.models import Comment, EmbeddedReply, Post, Tag
+from app.post.models import Comment, EmbeddedReply, Post, Reaction, Tag
 from app.user.models import User
 
 from .config import get_header, get_user, init_config  # noqa
@@ -258,3 +258,27 @@ def test_delete_replies() -> None:
         headers=get_header(),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_reactions() -> None:
+    user = get_user()
+    post = Post.get({})
+    response = client.post(f"/api/v1/posts/{post.id}/reactions", headers=get_header())
+    assert response.status_code == status.HTTP_200_OK
+    assert Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is True
+
+    # Delete reaction
+    response = client.delete(f"/api/v1/posts/{post.id}/reactions", headers=get_header())
+    assert response.status_code == status.HTTP_200_OK
+    assert (
+        Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is False
+    )
+
+
+def test_reactions_auth() -> None:
+    post = Post.get({})
+    response = client.post(f"/api/v1/posts/{post.id}/reactions")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response = client.delete(f"/api/v1/posts/{post.id}/reactions")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

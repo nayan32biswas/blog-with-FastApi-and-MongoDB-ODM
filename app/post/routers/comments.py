@@ -140,6 +140,11 @@ def create_replies(
             "post_id": ODMObjectId(post_id),
         },
     )
+    if len(comment.replies) >= 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Comment should have less then 100 comment.",
+        )
     reply_dict = EmbeddedReply(
         id=ODMObjectId(), user_id=user.id, description=reply_data.description
     ).dict()

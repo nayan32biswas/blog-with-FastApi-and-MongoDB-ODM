@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import random
 from datetime import datetime
 from typing import Dict
@@ -8,7 +9,7 @@ from mongodb_odm import InsertOne, apply_indexes
 from mongodb_odm.connection import db
 
 from app.base.utils.decorator import timing
-from app.post.models import Comment, EmbeddedReply, Post, PostDescription, Tag
+from app.post.models import Comment, EmbeddedReply, Post, Reaction, Tag
 from app.user.models import User
 from app.user.utils import get_password_hash
 
@@ -19,6 +20,10 @@ users = [
     {"username": "username_1", "full_name": fake.name(), "password": "password-one"},
     {"username": "username_2", "full_name": fake.name(), "password": "password-two"},
 ]
+
+
+def get_hash_password(_):
+    return get_password_hash(fake.password())
 
 
 @timing
@@ -37,6 +42,12 @@ def create_users(N: int) -> None:
         )
         for user in users
     ]
+
+    pool = multiprocessing.Pool(processes=8)
+    hash_passwords = pool.map(get_hash_password, range(N))
+    pool.close()
+    pool.join()
+
     for i in range(max(N - 2, 0)):
         write_users.append(
             InsertOne(
@@ -44,7 +55,7 @@ def create_users(N: int) -> None:
                     User(
                         username=f"{i+11}_username",
                         full_name=fake.name(),
-                        password=get_password_hash(fake.password()),
+                        password=hash_passwords[i],
                         random_str=User.new_random_str(),
                         joining_date=datetime.utcnow(),
                     )
@@ -56,9 +67,11 @@ def create_users(N: int) -> None:
 
 
 def create_tags(N: int) -> None:
-    write_tags = [InsertOne(Tag.to_mongo(Tag(name=fake.word()))) for _ in range(N)]
+    data_set = {fake.word() for _ in range(N)}
+
+    write_tags = [InsertOne(Tag.to_mongo(Tag(name=value))) for value in data_set]
     Tag.bulk_write(requests=write_tags)
-    log.info(f"{N} tag created")
+    log.info(f"{len(data_set)} tag created")
 
 
 def get_post() -> Dict:
@@ -91,19 +104,34 @@ def create_posts(N: int) -> None:
         )
     Post.bulk_write(requests=write_posts)
 
+    log.info(f"{N} post inserted")
+
+
+@timing
+def create_reactions() -> None:
+    user_ids = [user["_id"] for user in User.find_raw(projection={"_id": 1})]
     post_ids = [post["_id"] for post in Post.find_raw(projection={"_id": 1})]
-    write_descriptions = []
-    for i in range(N):
-        write_descriptions.append(
+
+    write_reactions = []
+    total_post = len(post_ids)
+    total_post_reaction = min(total_post, total_post // 3)
+
+    for post_id in random.sample(post_ids, total_post_reaction):
+        write_reactions.append(
             InsertOne(
-                PostDescription.to_mongo(
-                    PostDescription(post_id=post_ids[i], description=fake.text())
+                Reaction.to_mongo(
+                    Reaction(
+                        post_id=post_id,
+                        user_ids=random.sample(
+                            user_ids, random.randint(1, min(len(user_ids), 99))
+                        ),
+                    )
                 )
             )
         )
-    PostDescription.bulk_write(requests=write_descriptions)
+    Reaction.bulk_write(requests=write_reactions)
 
-    log.info(f"{N} post inserted")
+    log.info(f"{len(write_reactions)} reaction inserted")
 
 
 @timing
@@ -147,6 +175,7 @@ def populate_dummy_data(total_user: int = 10, total_post: int = 10) -> None:
     create_users(total_user)
     create_tags(min(max(total_post // 10, 10), 1000))
     create_posts(total_post)
+    create_reactions()
     create_comments()
     log.info("Data insertion complete")
 
