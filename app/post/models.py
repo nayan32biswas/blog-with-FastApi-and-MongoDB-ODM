@@ -61,7 +61,6 @@ class Comment(Document):
     user_id: ODMObjectId = Field(...)
     post_id: ODMObjectId = Field(...)
 
-    # This implementation may not perform well at scale
     replies: List[EmbeddedReply] = []
     description: str = Field(...)
 
