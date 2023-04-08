@@ -10,11 +10,11 @@ ENV YOUR_ENV=${YOUR_ENV} \
   PIP_DISABLE_PIP_VERSION_CHECK=on \
   PIP_DEFAULT_TIMEOUT=100
 
-RUN pip install "poetry==1.3.0"
+RUN pip install "poetry==1.4.1"
 
 WORKDIR /code
-COPY pyproject.toml /code/
 
+COPY pyproject.toml /code/
 RUN poetry config virtualenvs.create false \
   &&  poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
 

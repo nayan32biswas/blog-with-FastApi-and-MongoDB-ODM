@@ -12,17 +12,15 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
-MONGO_HOST = str(os.environ.get("MONGO_HOST"))
+MONGO_URL = str(os.environ.get("MONGO_URL"))
 
-ALLOWED_HOSTS = comma_separated_str_to_list(
-    os.environ.get("ALLOWED_HOSTS", "http://localhost:8080")
-)
+ALLOWED_HOSTS = comma_separated_str_to_list(os.environ.get("ALLOWED_HOSTS", "*"))
 SITE_URL = os.environ.get("SITE_URL")
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-LOG_LEVEL = "DEBUG" if DEBUG is True else "INFO"
+LOG_LEVEL = "INFO" if DEBUG is True else "INFO"
 
 log_config = {
     "version": 1,

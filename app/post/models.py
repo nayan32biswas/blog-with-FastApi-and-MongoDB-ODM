@@ -30,6 +30,7 @@ class Post(Document):
     title: str = Field(max_length=255)
     short_description: Optional[str] = Field(max_length=512, default=None)
     cover_image: Optional[str] = None
+    description: Optional[str] = None
 
     publish_at: Optional[datetime] = None
 
@@ -44,18 +45,6 @@ class Post(Document):
         indexes = [
             IndexModel([("author", ASCENDING)]),
             IndexModel([("tags", ASCENDING)]),
-        ]
-
-
-class PostDescription(Document):
-    post_id: ODMObjectId
-    description: Optional[str] = None
-
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config(Document.Config):
-        indexes = [
-            IndexModel([("post_id", ASCENDING)], unique=True),
         ]
 
 
@@ -83,6 +72,19 @@ class Comment(Document):
 
     class Config(Document.Config):
         collection_name = "comment"
+        indexes = [
+            IndexModel([("post_id", ASCENDING)]),
+        ]
+
+
+class Reaction(Document):
+    post_id: ODMObjectId = Field(...)
+    user_ids: List[ODMObjectId] = []
+
+    post: Optional[Post] = Relationship(local_field="post_id")
+
+    class Config(Document.Config):
+        collection_name = "reaction"
         indexes = [
             IndexModel([("post_id", ASCENDING)]),
         ]

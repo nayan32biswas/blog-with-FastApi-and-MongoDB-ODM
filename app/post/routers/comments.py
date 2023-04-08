@@ -1,9 +1,10 @@
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from mongodb_odm import ODMObjectId
 
-from app.base.types import ObjectIdStr
+from app.base.custom_types import ObjectIdStr
 from app.base.utils import get_offset
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
@@ -22,7 +23,7 @@ def get_comments(
     page: int = 1,
     limit: int = 20,
     _=Depends(get_authenticated_user_or_none),
-):
+) -> Any:
     offset = get_offset(page, limit)
 
     filter = {"post_id": ODMObjectId(post_id)}
@@ -58,7 +59,7 @@ def create_comments(
     post_id: ObjectIdStr,
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     comment = Comment(
         user_id=user.id,
         post_id=ODMObjectId(post_id),
@@ -71,7 +72,7 @@ def create_comments(
 
 @router.put(
     "/posts/{post_id}/comments/{comment_id}",
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     response_model=CommentOut,
 )
 def update_comments(
@@ -79,15 +80,20 @@ def update_comments(
     comment_id: ObjectIdStr,
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     comment = get_object_or_404(
         Comment,
         {
             "_id": ODMObjectId(comment_id),
-            "user_id": user.id,
             "post_id": ODMObjectId(post_id),
         },
     )
+    if comment.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to update this comment.",
+        )
+
     comment.description = comment_data.description
     comment.update()
     comment.user = user
@@ -95,22 +101,22 @@ def update_comments(
     return CommentOut.from_orm(comment)
 
 
-@router.delete(
-    "/posts/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/posts/{post_id}/comments/{comment_id}", status_code=status.HTTP_200_OK)
 def delete_comments(
     post_id: ObjectIdStr,
     comment_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     comment = get_object_or_404(
         Comment,
-        {
-            "_id": ODMObjectId(comment_id),
-            "user_id": user.id,
-            "post_id": ODMObjectId(post_id),
-        },
+        {"_id": ODMObjectId(comment_id), "post_id": ODMObjectId(post_id)},
     )
+    if comment.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to delete this comment.",
+        )
+
     comment.delete()
 
     return {"message": "Deleted"}
@@ -126,7 +132,7 @@ def create_replies(
     comment_id: ObjectIdStr,
     reply_data: ReplyIn,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     comment = get_object_or_404(
         Comment,
         {
@@ -134,6 +140,11 @@ def create_replies(
             "post_id": ODMObjectId(post_id),
         },
     )
+    if len(comment.replies) >= 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Comment should have less then 100 comment.",
+        )
     reply_dict = EmbeddedReply(
         id=ODMObjectId(), user_id=user.id, description=reply_data.description
     ).dict()
@@ -202,7 +213,7 @@ def update_replies(
     reply_id: ObjectIdStr,
     reply_data: ReplyIn,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     r_id = ODMObjectId(reply_id)
     update_comment = Comment.update_one(
         {
@@ -217,7 +228,8 @@ def update_replies(
 
     if update_comment.modified_count != 1:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to update this replies",
         )
     return {"message": "Updated"}
 
@@ -225,7 +237,7 @@ def update_replies(
 """
 @router.delete(
     "/posts/{post_id}/comments/{comment_id}/replies/{reply_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
 )
 def delete_replies_old(
     post_id: ObjectIdStr,
@@ -259,14 +271,14 @@ def delete_replies_old(
 
 @router.delete(
     "/posts/{post_id}/comments/{comment_id}/replies/{reply_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
 )
 def delete_replies(
     post_id: ObjectIdStr,
     comment_id: ObjectIdStr,
     reply_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     r_id = ODMObjectId(reply_id)
     update_comment = Comment.update_one(
         {
@@ -290,7 +302,8 @@ def delete_replies(
     )
     if update_comment.modified_count != 1:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete this replies",
         )
 
     return {"message": "Deleted"}

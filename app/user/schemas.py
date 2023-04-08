@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class TokenData(BaseModel):
     id: str
-    r_str: str
+    random_str: str
 
 
 class Registration(BaseModel):

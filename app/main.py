@@ -18,12 +18,12 @@ app: Any = FastAPI(debug=config.DEBUG)
 
 
 @app.on_event("startup")
-async def startup_db_client():
-    connect(config.MONGO_HOST)
+async def startup_db_client() -> None:
+    connect(config.MONGO_URL)
 
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_db_client() -> None:
     disconnect()
 
 
@@ -51,8 +51,8 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=catch_exceptions_middleware)
 
 if __name__ == "__main__":
     """CLI"""
-    from app.base.tools.cli import cli_app
+    from app.cli import app as cli_app
 
-    connect(config.MONGO_HOST)
+    connect(config.MONGO_URL)
     cli_app()
     disconnect()
