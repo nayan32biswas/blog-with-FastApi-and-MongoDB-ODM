@@ -1,7 +1,7 @@
 import logging
 import os
 from functools import lru_cache
-from typing import Any, Dict, Generator
+from typing import Any, Dict
 
 import pytest
 from fastapi import status
@@ -19,7 +19,7 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def init_config() -> Generator:
+def init_config() -> Any:
     connect(config.MONGO_URL)
 
     if not User.exists({"username": users[0]["username"]}):

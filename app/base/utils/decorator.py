@@ -2,8 +2,10 @@ from functools import wraps
 from time import time
 from typing import Any, Callable, Dict, List
 
+Function = Callable[..., Any]
 
-def timing(f) -> Callable:
+
+def timing(f: Function) -> Function:
     @wraps(f)
     def wrap(*args: List[Any], **kwargs: Dict[Any, Any]) -> Any:
         ts = time()

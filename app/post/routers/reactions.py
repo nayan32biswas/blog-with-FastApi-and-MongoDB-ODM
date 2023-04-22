@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, status
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 def create_reactions(
     post_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
     update_result = Reaction.update_one(
         {"post_id": post.id, "$where": "this.user_ids.length < 100"},
@@ -36,7 +37,7 @@ def create_reactions(
 def delete_post_reactions(
     post_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
-):
+) -> Any:
     post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
     Reaction.update_one(
         {"post_id": post.id, "user_ids": {"$in": [user.id]}},

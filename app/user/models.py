@@ -22,7 +22,9 @@ class User(Document):
 
     class Config(Document.Config):
         collection_name = "user"
-        indexes = (IndexModel([("username", ASCENDING)], unique=True),)
+        indexes = [
+            IndexModel([("username", ASCENDING)], unique=True),
+        ]
 
     @classmethod
     def new_random_str(cls) -> str:

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, no_type_check
 
 from fastapi import HTTPException, status
 from mongodb_odm.exceptions import ObjectDoesNotExist
@@ -7,10 +7,11 @@ from mongodb_odm.exceptions import ObjectDoesNotExist
 logger = logging.getLogger(__name__)
 
 
+@no_type_check
 def get_object_or_404(
     Model,
     filter: Dict[str, Any],
-    detail="Object Not Found",
+    detail: str = "Object Not Found",
     **kwargs: Dict[str, Any],
 ):
     try:

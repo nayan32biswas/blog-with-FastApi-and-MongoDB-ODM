@@ -9,7 +9,7 @@ from .config import DEBUG
 logger = logging.getLogger(__name__)
 
 
-async def add_process_time_header(request: Request, call_next: Any) -> Response:
+async def add_process_time_header(request: Request, call_next: Any) -> Any:
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time
@@ -17,7 +17,7 @@ async def add_process_time_header(request: Request, call_next: Any) -> Response:
     return response
 
 
-async def catch_exceptions_middleware(request: Request, call_next: Any) -> Response:
+async def catch_exceptions_middleware(request: Request, call_next: Any) -> Any:
     try:
         return await call_next(request)
     except Exception as e:

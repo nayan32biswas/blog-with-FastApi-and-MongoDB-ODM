@@ -17,12 +17,12 @@ dictConfig(config.log_config)
 app: Any = FastAPI(debug=config.DEBUG)
 
 
-@app.on_event("startup")
+@app.on_event("startup")  # type: ignore
 async def startup_db_client() -> None:
     connect(config.MONGO_URL)
 
 
-@app.on_event("shutdown")
+@app.on_event("shutdown")  # type: ignore
 async def shutdown_db_client() -> None:
     disconnect()
 

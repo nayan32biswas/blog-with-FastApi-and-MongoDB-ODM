@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any
+from typing import Any, no_type_check
 
 from pydantic import BaseModel
 from pydantic.utils import deep_update
@@ -15,6 +15,7 @@ def get_offset(page: int, limit: int) -> int:
     return calculate_offset(page, limit)
 
 
+@no_type_check
 def update_partially(target, source: BaseModel, exclude=None) -> Any:
     cls = target.__class__
     update_data = source.dict(exclude_unset=True, exclude=exclude)

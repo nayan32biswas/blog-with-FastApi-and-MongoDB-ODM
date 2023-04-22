@@ -22,7 +22,7 @@ def get_comments(
     post_id: ObjectIdStr,
     page: int = 1,
     limit: int = 20,
-    _=Depends(get_authenticated_user_or_none),
+    _: User = Depends(get_authenticated_user_or_none),
 ) -> Any:
     offset = get_offset(page, limit)
 
