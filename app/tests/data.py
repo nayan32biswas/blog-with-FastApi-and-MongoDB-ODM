@@ -43,10 +43,10 @@ def create_users(N: int) -> None:
         for user in users
     ]
 
-    pool = multiprocessing.Pool(processes=8)
-    hash_passwords = pool.map(get_hash_password, range(N))
-    pool.close()
-    pool.join()
+    with multiprocessing.Pool(processes=8) as pool:
+        hash_passwords = pool.map(get_hash_password, range(100))
+
+    log.info("Password generated")
 
     for i in range(max(N - 2, 0)):
         write_users.append(
@@ -55,7 +55,7 @@ def create_users(N: int) -> None:
                     User(
                         username=f"{i+11}_username",
                         full_name=fake.name(),
-                        password=hash_passwords[i],
+                        password=hash_passwords[i % len(hash_passwords)],
                         random_str=User.new_random_str(),
                         joining_date=datetime.utcnow(),
                     )
@@ -141,15 +141,16 @@ def create_comments() -> None:
 
     write_comments = []
     total_post = len(post_ids)
-    total_post_comment = min(total_post, total_post // 3)
+    total_post_comment = min(total_post, min(total_post // 3, 1000))
 
     for post_id in random.sample(post_ids, total_post_comment):
-        for _ in range(random.randint(1, 100)):
+        total_comment = random.randint(1, random.randint(1, random.randint(1, 100)))
+        for _ in range(total_comment):
             replies = [
                 EmbeddedReply(
                     user_id=random.sample(user_ids, 1)[0], description=fake.text()
                 )
-                for _ in range(random.randint(1, 20))
+                for _ in range(random.randint(1, random.randint(1, 20)))
             ]
             write_comments.append(
                 InsertOne(

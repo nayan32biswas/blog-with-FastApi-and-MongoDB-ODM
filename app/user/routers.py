@@ -9,7 +9,7 @@ from app.base.utils import update_partially
 
 from .dependencies import get_authenticated_user
 from .models import User
-from .schemas import Registration, UpdateAccessTokenIn, UserIn, UserOut
+from .schemas import LoginIn, Registration, UpdateAccessTokenIn, UserIn, UserOut
 from .utils import (
     authenticate_user,
     create_access_token,
@@ -49,11 +49,8 @@ def registration(data: Registration) -> Any:
     return UserOut.from_orm(user)
 
 
-@router.post("/token")
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-) -> Any:
-    user = authenticate_user(form_data.username, form_data.password)
+def token_response(username: str, password: str):
+    user = authenticate_user(username, password)
     if not user or user.is_active is False:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -72,6 +69,18 @@ def login_for_access_token(
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+@router.post("/token")
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+) -> Any:
+    return token_response(form_data.username, form_data.password)
+
+
+@router.post("/api/v1/token")
+def login(data: LoginIn) -> Any:
+    return token_response(data.username, data.password)
 
 
 @router.post("/api/v1/update-access-token")

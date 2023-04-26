@@ -10,6 +10,8 @@ def calculate_offset(page: int, limit: int) -> int:
 
 
 def get_offset(page: int, limit: int) -> int:
+    if page < 1:
+        page = 1
     if not 1 <= limit <= 100:
         raise ValueError("Invalid pagination limit")
     return calculate_offset(page, limit)

@@ -14,6 +14,11 @@ class Registration(BaseModel):
     password: str = Field(...)
 
 
+class LoginIn(BaseModel):
+    username: str = Field(...)
+    password: str = Field(...)
+
+
 class UpdateAccessTokenIn(BaseModel):
     refresh_token: str
 
