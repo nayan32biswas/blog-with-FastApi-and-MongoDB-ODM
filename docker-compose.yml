@@ -31,7 +31,7 @@ services:
   db:
     image: mongo
     # restart: always
-    container_name: blog_db
+    container_name: fastapi_blog_db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
