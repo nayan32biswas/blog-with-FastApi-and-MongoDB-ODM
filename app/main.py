@@ -19,6 +19,7 @@ app: Any = FastAPI(debug=config.DEBUG)
 
 @app.on_event("startup")  # type: ignore
 async def startup_db_client() -> None:
+    print("connection", config.MONGO_URL)
     connect(config.MONGO_URL)
 
 

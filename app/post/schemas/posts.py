@@ -7,14 +7,14 @@ from app.base.custom_types import ObjectIdStr
 from app.user.schemas import PublicUserListOut
 
 
-class TagIn(BaseModel):
+class TopicIn(BaseModel):
     name: str = Field(max_length=127)
 
     class Config:
         orm_mode = True
 
 
-class TagOut(BaseModel):
+class TopicOut(BaseModel):
     id: ObjectIdStr
     name: str
 
@@ -43,7 +43,7 @@ class PostCreate(BaseModel):
     publish_at: Optional[datetime] = None
 
     description: Optional[str] = None
-    tag_ids: List[ObjectIdStr] = []
+    topic_ids: List[ObjectIdStr] = []
 
     class Config:
         orm_mode = True
@@ -57,7 +57,7 @@ class PostUpdate(BaseModel):
     publish_at: Optional[datetime] = None
 
     description: Optional[str] = None
-    tag_ids: List[ObjectIdStr] = []
+    topic_ids: List[ObjectIdStr] = []
 
     class Config:
         orm_mode = True
@@ -73,7 +73,7 @@ class PostDetailsOut(BaseModel):
     publish_at: Optional[datetime] = None
 
     description: Optional[str] = None
-    tags: List[TagOut] = []
+    topics: List[TopicOut] = []
 
     class Config:
         orm_mode = True

@@ -6,7 +6,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.post.models import Comment, EmbeddedReply, Post, Reaction, Tag
+from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
 from app.user.models import User
 
 from .config import get_header, get_user, init_config  # noqa
@@ -15,24 +15,24 @@ client = TestClient(app)
 fake = Faker()
 
 
-def test_get_tags() -> None:
-    response = client.get("/api/v1/tags")
+def test_get_topics() -> None:
+    response = client.get("/api/v1/topics")
     assert response.status_code == status.HTTP_200_OK
 
     assert "count" in response.json()
     assert "results" in response.json()
 
-    response = client.get("/api/v1/tags", params={"q": "abc"})
+    response = client.get("/api/v1/topics", params={"q": "abc"})
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_create_tags() -> None:
+def test_create_topics() -> None:
     payload = {"name": fake.word()}
 
-    response = client.post("/api/v1/tags", json=payload)
+    response = client.post("/api/v1/topics", json=payload)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    response = client.post("/api/v1/tags", json=payload, headers=get_header())
+    response = client.post("/api/v1/topics", json=payload, headers=get_header())
     assert response.status_code == status.HTTP_201_CREATED
 
 
@@ -48,10 +48,10 @@ def test_get_posts() -> None:
     assert response.status_code == status.HTTP_200_OK
 
     user = get_user()
-    tag = Tag.get({})
+    topic = Topic.get({})
     response = client.get(
         "/api/v1/posts",
-        params={"q": "abc", "tags": [str(tag.id)], "author_id": str(user.id)},
+        params={"q": "abc", "topics": [str(topic.id)], "author_id": str(user.id)},
     )
     assert response.status_code == status.HTTP_200_OK
 

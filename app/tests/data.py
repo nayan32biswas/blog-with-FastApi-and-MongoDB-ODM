@@ -12,7 +12,7 @@ from mongodb_odm import InsertOne, apply_indexes
 from mongodb_odm.connection import db
 
 from app.base.utils.decorator import timing
-from app.post.models import Comment, EmbeddedReply, Post, Reaction, Tag
+from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
 from app.user.models import User
 from app.user.utils import get_password_hash
 
@@ -62,8 +62,8 @@ def get_user_ids():
 
 
 @lru_cache
-def get_tag_ids():
-    return [tag["_id"] for tag in Tag.find_raw(projection={"_id": 1})]
+def get_topic_ids():
+    return [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
 
 
 @lru_cache
@@ -115,15 +115,15 @@ def create_users(N: int) -> None:
     log.info(f"{N} user created")
 
 
-def create_tags(N: int) -> None:
+def create_topics(N: int) -> None:
     data_set = {rand_str(random.randint(5, 15)).lower() for _ in range(N)}
-    if Tag.exists() is True:
-        log.info("Tag already exists")
+    if Topic.exists() is True:
+        log.info("Topic already exists")
         return
 
-    write_tags = [InsertOne(Tag.to_mongo(Tag(name=value))) for value in data_set]
-    Tag.bulk_write(requests=write_tags)
-    log.info(f"{len(data_set)} tag created")
+    write_topics = [InsertOne(Topic.to_mongo(Topic(name=value))) for value in data_set]
+    Topic.bulk_write(requests=write_topics)
+    log.info(f"{len(data_set)} topic created")
 
 
 def get_post() -> Dict[str, Any]:
@@ -138,22 +138,22 @@ def get_post() -> Dict[str, Any]:
 
 def _create_posts(total_post):
     user_ids = get_user_ids()
-    tag_ids = [tag["_id"] for tag in Tag.find_raw(projection={"_id": 1})]
+    topic_ids = [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
 
     random.shuffle(user_ids)
-    random.shuffle(tag_ids)
-    total_user, total_tag = len(user_ids), len(tag_ids)
+    random.shuffle(topic_ids)
+    total_user, total_topic = len(user_ids), len(topic_ids)
 
     write_posts = []
     for i in range(total_post):
-        tag_lo, tag_hi = get_random_range(total_tag, 5, 10)
+        topic_lo, topic_hi = get_random_range(total_topic, 5, 10)
         write_posts.append(
             InsertOne(
                 Post.to_mongo(
                     Post(
                         **get_post(),
                         author_id=user_ids[i % total_user],
-                        tag_ids=tag_ids[tag_lo:tag_hi],
+                        topic_ids=topic_ids[topic_lo:topic_hi],
                     )
                 )
             )
@@ -259,7 +259,7 @@ def populate_dummy_data(total_user: int = 10, total_post: int = 10) -> None:
 
     log.info("Inserting data...")
     create_users(total_user)
-    create_tags(min(max(total_post // 10, 10), 100000))
+    create_topics(min(max(total_post // 10, 10), 100000))
     create_posts(total_post)
     create_reactions()
     create_comments()

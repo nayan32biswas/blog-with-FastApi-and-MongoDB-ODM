@@ -14,7 +14,7 @@ from mongodb_odm import (
 from app.user.models import User
 
 
-class Tag(Document):
+class Topic(Document):
     user_id: Optional[ODMObjectId] = None
     name: str = Field(max_length=127)
 
@@ -34,7 +34,7 @@ class Post(Document):
 
     publish_at: Optional[datetime] = None
 
-    tag_ids: List[ODMObjectId] = []
+    topic_ids: List[ODMObjectId] = []
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -44,7 +44,7 @@ class Post(Document):
     class Config(Document.Config):
         indexes = [
             IndexModel([("author", ASCENDING)]),
-            IndexModel([("tags", ASCENDING)]),
+            IndexModel([("topics", ASCENDING)]),
         ]
 
 

@@ -13,22 +13,22 @@ from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Post, Tag
+from ..models import Post, Topic
 from ..schemas.posts import (
     PostCreate,
     PostDetailsOut,
     PostListOut,
     PostUpdate,
-    TagIn,
-    TagOut,
+    TopicIn,
+    TopicOut,
 )
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-@router.get("/tags", status_code=status.HTTP_200_OK)
-def get_tags(
+@router.get("/topics", status_code=status.HTTP_200_OK)
+def get_topics(
     page: int = 1,
     limit: int = 20,
     q: Optional[str] = Query(default=None),
@@ -39,27 +39,27 @@ def get_tags(
     if q:
         filter["name"] = re.compile(q, re.IGNORECASE)
 
-    tag_qs = Tag.find(filter=filter, limit=limit, skip=offset)
-    results = [TagOut.from_orm(tag) for tag in tag_qs]
+    topic_qs = Topic.find(filter=filter, limit=limit, skip=offset)
+    results = [TopicOut.from_orm(topic) for topic in topic_qs]
 
-    tag_count = Tag.count_documents(filter=filter)
+    topic_count = Topic.count_documents(filter=filter)
 
-    return {"count": tag_count, "results": results}
+    return {"count": topic_count, "results": results}
 
 
-@router.post("/tags", status_code=status.HTTP_201_CREATED, response_model=TagOut)
-def create_tags(
-    tag_data: TagIn,
+@router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
+def create_topics(
+    topic_data: TopicIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    name = tag_data.name.lower()
+    name = topic_data.name.lower()
 
-    tag, created = Tag.get_or_create({"name": name})
+    topic, created = Topic.get_or_create({"name": name})
     if created:
-        tag.user_id = user.id
-        tag.update()
+        topic.user_id = user.id
+        topic.update()
 
-    return TagOut.from_orm(tag)
+    return TopicOut.from_orm(topic)
 
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
@@ -67,7 +67,7 @@ def get_posts(
     page: int = 1,
     limit: int = 20,
     q: Optional[str] = Query(default=None),
-    tags: List[ObjectIdStr] = Query(default=[]),
+    topics: List[ObjectIdStr] = Query(default=[]),
     author_id: Optional[ObjectIdStr] = Query(default=None),
     _: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Dict[str, Any]:
@@ -77,8 +77,8 @@ def get_posts(
     }
     if author_id:
         filter["author_id"] = ObjectId(author_id)
-    if tags:
-        filter["tag_ids"] = {"$in": [ODMObjectId(id) for id in tags]}
+    if topics:
+        filter["topic_ids"] = {"$in": [ODMObjectId(id) for id in topics]}
     if q:
         filter["title"] = q
 
@@ -129,12 +129,12 @@ def create_posts(
         description=post_data.description,
         cover_image=post_data.cover_image,
         publish_at=post_data.publish_at,
-        tag_ids=[ODMObjectId(id) for id in post_data.tag_ids],
+        topic_ids=[ODMObjectId(id) for id in post_data.topic_ids],
     ).create()
 
     post.author = user
-    post.tags = [
-        TagOut.from_orm(tag) for tag in Tag.find({"_id": {"$in": post.tag_ids}})
+    post.topics = [
+        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
     return PostDetailsOut.from_orm(post)
@@ -156,8 +156,8 @@ def get_post_details(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
         )
-    post.tags = [
-        TagOut.from_orm(tag) for tag in Tag.find({"_id": {"$in": post.tag_ids}})
+    post.topics = [
+        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
     return PostDetailsOut.from_orm(post)

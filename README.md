@@ -111,14 +111,51 @@ Before creating PR make sure you follow those steps:
 - `poetry run scripts/lint.sh` Run linting script.
 - `poetry run scripts/format.sh` Run format test if any formatting required.
 
-## Run production server
+## Build and Run production server
+
+### Database
+
+#### Run The Database
+
+For the first time run the database with container name **blog-database-container**
 
 ```
-docker run -d --name blog_database -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo
+docker run -d --name blog-database-container -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo
+```
 
-docker build -t fastapi-blog -f Dockerfile.prod .
-docker run  --rm -d --name fastapi-blog -p 8000:8000 --env-file .env fastapi-blog
+#### Start Database If Existing
 
-docker run --rm --env-file .env fastapi-blog python -m app.main delete-data
-docker run --rm --env-file .env fastapi-blog python -m app.main populate-data --total-user 10000 --total-post 10000
+```
+docker start blog-database-container
+```
+
+#### Get container IP
+
+```
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' blog-database-container
+```
+
+### Run Server
+
+#### Build and run server
+
+```bash
+docker build -t fastapi-blog-image -f Dockerfile.prod .
+
+docker run -d --name fastapi-blog-container \
+    -p 8000:8000 --env-file .env \
+    fastapi-blog-image
+```
+
+#### Restart server
+
+```
+docker start fastapi-blog-container
+```
+
+## Populate Data
+
+```bash
+docker run --rm --env-file .env fastapi-blog-image python -m app.main delete-data
+docker run --rm --env-file .env fastapi-blog-image python -m app.main populate-data --total-user 10000 --total-post 10000
 ```
