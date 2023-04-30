@@ -13,8 +13,8 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    image: nayan32biswas/blog:latest
-    container_name: blog_server
+    image: nayan32biswas/fastapi_blog:latest
+    container_name: fastapi_blog_server
     command: "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - 8000:8000

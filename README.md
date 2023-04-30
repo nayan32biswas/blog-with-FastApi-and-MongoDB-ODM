@@ -69,12 +69,10 @@ Make sure you have docker installed and active.
 - `docker-compose run --rm api python -m app.main create-indexes` Create Indexes
 - `docker-compose up api` Run the server.
 
-
 ### Populate Database with Docker
 
 - `docker-compose run --rm api python -m app.main populate-data --total-user 100 --total-post 100` Populate database with 100 user and 100 post with others necessary information
 - `docker-compose run --rm api python -m app.main delete-data` Clean database if necessary.
-
 
 ## Visit API Documentation
 
@@ -112,3 +110,15 @@ Before creating PR make sure you follow those steps:
 - `poetry run scripts/test.sh` Run unittest and make sure everything pass.
 - `poetry run scripts/lint.sh` Run linting script.
 - `poetry run scripts/format.sh` Run format test if any formatting required.
+
+## Run production server
+
+```
+docker run -d --name blog_database -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo
+
+docker build -t fastapi-blog -f Dockerfile.prod .
+docker run -d --name fastapi-blog -p 8000:8000 --env-file .env fastapi-blog
+
+docker run --rm --env-file .env fastapi-blog python -m app.main delete-data
+docker run --rm --env-file .env fastapi-blog python -m app.main populate-data --total-user 10000 --total-post 10000
+```

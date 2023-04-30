@@ -1,8 +1,9 @@
 import logging
 import multiprocessing
-from functools import lru_cache
 import random
+import string
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Dict, List
 from uuid import uuid4
 
@@ -25,6 +26,13 @@ users = [
     {"username": "username_1", "full_name": fake.name(), "password": "password-one"},
     {"username": "username_2", "full_name": fake.name(), "password": "password-two"},
 ]
+
+
+def rand_str(N: int = 12) -> str:
+    return "".join(
+        random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
+        for _ in range(N)
+    )
 
 
 def get_range(N: int) -> List[int]:
@@ -108,7 +116,7 @@ def create_users(N: int) -> None:
 
 
 def create_tags(N: int) -> None:
-    data_set = {fake.word() for _ in range(N)}
+    data_set = {rand_str(random.randint(5, 15)).lower() for _ in range(N)}
     if Tag.exists() is True:
         log.info("Tag already exists")
         return
@@ -251,7 +259,7 @@ def populate_dummy_data(total_user: int = 10, total_post: int = 10) -> None:
 
     log.info("Inserting data...")
     create_users(total_user)
-    create_tags(min(max(total_post // 10, 10), 1000))
+    create_tags(min(max(total_post // 10, 10), 100000))
     create_posts(total_post)
     create_reactions()
     create_comments()
@@ -260,3 +268,4 @@ def populate_dummy_data(total_user: int = 10, total_post: int = 10) -> None:
 
 def clean_data() -> None:
     db().command("dropDatabase")
+    log.info("Database deleted")
