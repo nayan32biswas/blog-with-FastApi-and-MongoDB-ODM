@@ -82,21 +82,9 @@ def get_posts(
     if q:
         filter["title"] = q
 
-    """
-    posts = []
-    author_ids = []
-    for post in Post.find(filter=filter, limit=limit, skip=offset):
-        author_ids.append(post.author_id)
-        posts.append(post)
-    author_dict = {obj.id: obj for obj in User.find({"_id": {"$in": author_ids}})}
-
-    results = []
-    for post in posts:
-        post.author = author_dict.get(post.author_id)
-        results.append(PostListOut.from_orm(post).dict())
-    """
-
-    post_qs = Post.find(filter=filter, limit=limit, skip=offset)
+    post_qs = Post.find(
+        filter=filter, limit=limit, skip=offset, projection={"description": 0}
+    )
     results = [PostListOut.from_orm(post).dict() for post in Post.load_related(post_qs)]
 
     post_count = Post.count_documents(filter=filter)

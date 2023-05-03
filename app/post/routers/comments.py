@@ -10,11 +10,15 @@ from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Comment, EmbeddedReply
+from ..models import Comment, EmbeddedReply, Post
 from ..schemas.comments import CommentIn, CommentOut, ReplyIn, ReplyOut
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
+
+
+def update_total_comment(post_id: Any, val: int):
+    Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_comment": val}})
 
 
 @router.get("/posts/{post_id}/comments")
@@ -65,6 +69,8 @@ def create_comments(
         post_id=ODMObjectId(post_id),
         description=comment_data.description,
     ).create()
+    # increase total comment for post
+    update_total_comment(post_id, 1)
 
     comment.user = user
     return CommentOut.from_orm(comment)
@@ -118,6 +124,8 @@ def delete_comments(
         )
 
     comment.delete()
+    # decrease total comment for post
+    update_total_comment(post_id, -1)
 
     return {"message": "Deleted"}
 

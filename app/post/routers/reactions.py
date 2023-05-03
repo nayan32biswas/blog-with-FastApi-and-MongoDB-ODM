@@ -3,6 +3,7 @@ from typing import Any
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, status
+from mongodb_odm import ODMObjectId
 
 from app.base.custom_types import ObjectIdStr
 from app.base.utils.query import get_object_or_404
@@ -13,6 +14,10 @@ from ..models import Post, Reaction
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
+
+
+def update_total_reaction(post_id: Any, val: int):
+    Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_reaction": val}})
 
 
 @router.post("/posts/{post_id}/reactions", status_code=status.HTTP_200_OK)
@@ -30,7 +35,14 @@ def create_reactions(
         pass
         # Insert new one
         # update_result.matched_count and update_result.modified_count should be zero
-    return {"message": "Reaction Added"}
+
+    if update_result.modified_count or update_result.upserted_id is not None:
+        # increase total comment for post
+        update_total_reaction(post_id, 1)
+        message = "Reaction Added"
+    else:
+        message = "You already have an reaction in this post"
+    return {"message": message}
 
 
 @router.delete("/posts/{post_id}/reactions", status_code=status.HTTP_200_OK)
@@ -39,8 +51,12 @@ def delete_post_reactions(
     user: User = Depends(get_authenticated_user),
 ) -> Any:
     post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
-    Reaction.update_one(
+    update_result = Reaction.update_one(
         {"post_id": post.id, "user_ids": {"$in": [user.id]}},
         {"$pull": {"user_ids": user.id}},
     )
+    if update_result.modified_count:
+        # decrease total comment for post
+        update_total_reaction(post_id, -1)
+
     return {"message": "Reaction Deleted"}

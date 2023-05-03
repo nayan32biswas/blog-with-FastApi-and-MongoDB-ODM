@@ -31,6 +31,8 @@ class Post(Document):
     short_description: Optional[str] = Field(max_length=512, default=None)
     cover_image: Optional[str] = None
     description: Optional[str] = None
+    total_comment: int = Field(default=0)
+    total_reaction: int = Field(default=0)
 
     publish_at: Optional[datetime] = None
 
