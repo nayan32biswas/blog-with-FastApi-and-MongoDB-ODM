@@ -8,7 +8,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.base import config
 from app.base import routers as base_routers
-from app.base.exception_handler import UnicornException, unicorn_exception_handler
+from app.base.exception_handler import (
+    CustomException,
+    UnicornException,
+    handle_custom_exception,
+    unicorn_exception_handler,
+)
 from app.base.middleware import add_process_time_header, catch_exceptions_middleware
 from app.post import routers as post_routers
 from app.user import routers as user_routers
@@ -19,7 +24,6 @@ app: Any = FastAPI(debug=config.DEBUG)
 
 @app.on_event("startup")  # type: ignore
 async def startup_db_client() -> None:
-    print("connection", config.MONGO_URL)
     connect(config.MONGO_URL)
 
 
@@ -33,13 +37,14 @@ app.include_router(post_routers.router, tags=["post"])
 app.include_router(user_routers.router, tags=["user"])
 
 
+# Exception handler
+app.add_exception_handler(UnicornException, unicorn_exception_handler)
+app.add_exception_handler(CustomException, handle_custom_exception)
+
+# Add middleware
 if config.DEBUG is True:
     app.add_middleware(BaseHTTPMiddleware, dispatch=add_process_time_header)
 
-# Exception handler
-app.add_exception_handler(UnicornException, unicorn_exception_handler)
-
-# Add middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_HOSTS,

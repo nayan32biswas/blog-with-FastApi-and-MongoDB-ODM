@@ -4,10 +4,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from mongodb_odm import ODMObjectId
 
 from app.base.custom_types import ObjectIdStr
+from app.base.exceptions import CustomException, ExType
 from app.base.utils import get_offset, update_partially
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
@@ -122,7 +123,8 @@ def create_posts(
 
     post.author = user
     post.topics = [
-        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
+        TopicOut.from_orm(topic)
+        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
     return PostDetailsOut.from_orm(post)
@@ -141,11 +143,14 @@ def get_post_details(
         post = Post.get(filter=filter)
         post.author = User.get({"_id": post.author_id})
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.OBJECT_NOT_FOUND,
+            detail="Object not found.",
         )
     post.topics = [
-        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
+        TopicOut.from_orm(topic)
+        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
     return PostDetailsOut.from_orm(post)
@@ -164,8 +169,9 @@ def update_posts(
     post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
 
     if post.author_id != user.id:
-        raise HTTPException(
+        raise CustomException(
             status_code=status.HTTP_403_FORBIDDEN,
+            code=ExType.PERMISSION_ERROR,
             detail="You don't have access to update this post.",
         )
 
@@ -189,8 +195,9 @@ def delete_post(
     post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
 
     if post.author_id != user.id:
-        raise HTTPException(
+        raise CustomException(
             status_code=status.HTTP_403_FORBIDDEN,
+            code=ExType.PERMISSION_ERROR,
             detail="You don't have access to delete this post.",
         )
     return {"message": "Deleted"}

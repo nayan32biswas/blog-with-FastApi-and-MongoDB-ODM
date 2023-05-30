@@ -2,9 +2,11 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.base.exception_handler import CustomException
+from app.base.exceptions import ExType
 from app.base.utils import update_partially
 
 from .dependencies import get_authenticated_user
@@ -27,8 +29,11 @@ logger = logging.getLogger(__name__)
 )
 def registration(data: Registration) -> Any:
     if User.exists({"username": data.username}):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists."
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.USERNAME_EXISTS,
+            detail="Username already exists.",
+            field="email",
         )
 
     try:
@@ -42,8 +47,10 @@ def registration(data: Registration) -> Any:
         ).create()
     except Exception as ex:
         logger.warning(f"Raise error while creating user error:{ex}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Something wrong try again."
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.UNHANDLED_ERROR,
+            detail="Something wrong. Try later.",
         )
 
     return UserOut.from_orm(user)
@@ -52,10 +59,10 @@ def registration(data: Registration) -> Any:
 def token_response(username: str, password: str):
     user = authenticate_user(username, password)
     if not user or user.is_active is False:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.AUTHENTICATION_ERROR,
             detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(
         data={"id": str(user.id), "random_str": str(user.random_str)}
