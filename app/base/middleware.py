@@ -4,8 +4,7 @@ from typing import Any
 
 from fastapi import Request
 
-from app.base.exception_handler import CustomException
-from app.base.exceptions import ExType
+from app.base.exceptions import CustomException, ExType
 
 from .config import DEBUG
 

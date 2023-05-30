@@ -12,7 +12,7 @@ fastapi = "^0.95.0"
 passlib = "1.7.4"
 pydantic = "~1.10.7"
 pyjwt = "~2.6.0"
-pymongo = {version = "~4.3.3", extras = ["srv"]}
+pymongo = { version = "~4.3.3", extras = ["srv"] }
 python-multipart = "0.0.6"
 typer = "0.7.0"
 uvicorn = "0.21.1"
@@ -55,9 +55,10 @@ exclude_lines = ['if __name__ == "__main__":']
 profile = "black"
 known_third_party = ["mongodb_odm"]
 
+[tool.black]
+line-length = 88
 
 [tool.mypy]
-# --strict
 disallow_any_generics = true
 disallow_subclassing_any = true
 disallow_untyped_calls = true
@@ -71,7 +72,7 @@ warn_unused_ignores = true
 warn_return_any = true
 implicit_reexport = false
 strict_equality = true
-# --strict end
+exclude = ["^app/tests/*$"]
 
 [[tool.mypy.overrides]]
 module = ""

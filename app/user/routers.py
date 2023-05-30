@@ -5,8 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.base.exception_handler import CustomException
-from app.base.exceptions import ExType
+from app.base.exceptions import CustomException, ExType
 from app.base.utils import update_partially
 
 from .dependencies import get_authenticated_user
@@ -56,7 +55,7 @@ def registration(data: Registration) -> Any:
     return UserOut.from_orm(user)
 
 
-def token_response(username: str, password: str):
+def token_response(username: str, password: str) -> Any:
     user = authenticate_user(username, password)
     if not user or user.is_active is False:
         raise CustomException(

@@ -4,7 +4,7 @@ import random
 import string
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from uuid import uuid4
 
 from faker import Faker
@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 
 PROCESSORS = max(multiprocessing.cpu_count() - 2, 2)
 
-hash_passwords = []
 users = [
     {"username": "username_1", "full_name": fake.name(), "password": "password-one"},
     {"username": "username_2", "full_name": fake.name(), "password": "password-two"},
@@ -45,7 +44,7 @@ def get_range(N: int) -> List[int]:
     return val
 
 
-def get_random_range(total, min_item, max_item):
+def get_random_range(total: int, min_item: int, max_item: int) -> Tuple[int, int]:
     total -= 1
     lo = random.randint(0, total)
     hi = min(lo + random.randint(min_item, max_item), total)
@@ -57,21 +56,21 @@ def get_hash_password(_: Any) -> str:
 
 
 @lru_cache
-def get_user_ids():
+def get_user_ids() -> List[Any]:
     return [user["_id"] for user in User.find_raw(projection={"_id": 1})]
 
 
 @lru_cache
-def get_topic_ids():
+def get_topic_ids() -> List[Any]:
     return [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
 
 
 @lru_cache
-def get_post_ids():
+def get_post_ids() -> List[Any]:
     return [post["_id"] for post in Post.find_raw(projection={"_id": 1})]
 
 
-def _create_users(total_user):
+def _create_users(total_user: Any) -> bool:
     hash_passwords = []
     for _ in range(10):
         hash_passwords.append(get_hash_password(0))
@@ -136,7 +135,7 @@ def get_post() -> Dict[str, Any]:
     }
 
 
-def _create_posts(total_post):
+def _create_posts(total_post: Any) -> bool:
     user_ids = get_user_ids()
     topic_ids = [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
 
@@ -171,7 +170,7 @@ def create_posts(N: int) -> None:
     log.info(f"{N} post inserted")
 
 
-def _create_reactions(total_reaction):
+def _create_reactions(total_reaction: Any) -> None:
     user_ids = get_user_ids()
     post_ids = get_post_ids()
 
@@ -206,7 +205,7 @@ def create_reactions() -> None:
     log.info(f"{N} reaction inserted")
 
 
-def _create_comments(total_comment) -> None:
+def _create_comments(total_comment: Any) -> None:
     user_ids = get_user_ids()
     post_ids = get_post_ids()
 

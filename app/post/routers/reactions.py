@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-def update_total_reaction(post_id: Any, val: int):
+def update_total_reaction(post_id: Any, val: int) -> None:
     Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_reaction": val}})
 
 

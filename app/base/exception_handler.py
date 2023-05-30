@@ -13,7 +13,9 @@ async def unicorn_exception_handler(
     )
 
 
-async def handle_custom_exception(request, exc: CustomException):
+async def handle_custom_exception(
+    request: Request, exc: CustomException
+) -> JSONResponse:
     error_obj = {
         "code": exc.code,
         "detail": exc.detail,

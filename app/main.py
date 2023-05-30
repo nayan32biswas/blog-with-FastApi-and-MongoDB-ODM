@@ -9,11 +9,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.base import config
 from app.base import routers as base_routers
 from app.base.exception_handler import (
-    CustomException,
-    UnicornException,
     handle_custom_exception,
     unicorn_exception_handler,
 )
+from app.base.exceptions import CustomException, UnicornException
 from app.base.middleware import add_process_time_header, catch_exceptions_middleware
 from app.post import routers as post_routers
 from app.user import routers as user_routers
