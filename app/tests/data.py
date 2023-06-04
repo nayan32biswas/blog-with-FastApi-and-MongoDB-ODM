@@ -266,7 +266,7 @@ def create_comments() -> None:
 
 
 @timing
-def populate_dummy_data(total_user: int = 10, total_post: int = 10) -> None:
+def populate_dummy_data(total_user: int = 100, total_post: int = 100) -> None:
     apply_indexes()
 
     log.info("Inserting data...")

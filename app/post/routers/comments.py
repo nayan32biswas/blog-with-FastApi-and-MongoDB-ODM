@@ -212,7 +212,7 @@ def update_replies(
     status_code=status.HTTP_200_OK,
 )
 def delete_replies(
-    slug: ObjectIdStr,
+    slug: str,
     comment_id: ObjectIdStr,
     reply_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),

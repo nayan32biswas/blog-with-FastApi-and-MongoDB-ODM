@@ -47,6 +47,7 @@ def create_topics(
             try:
                 new_slug = f"{slug}-{rand_slug_str(i)}" if i > 1 else slug
                 topic.update({"$set": {"user_id": user.id, "slug": new_slug}})
+                topic.slug = new_slug
                 updated = True
                 break
             except Exception:
@@ -193,17 +194,13 @@ def get_post_details(
     return PostDetailsOut.from_orm(post).dict()
 
 
-@router.patch(
-    "/posts/{slug}",
-    status_code=status.HTTP_200_OK,
-    response_model=PostDetailsOut,
-)
+@router.patch("/posts/{slug}", status_code=status.HTTP_200_OK)
 def update_posts(
     slug: str,
     post_data: PostUpdate,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": slug})
+    post = get_object_or_404(Post, {"slug": slug})
 
     if post.author_id != user.id:
         raise CustomException(
@@ -227,7 +224,7 @@ def delete_post(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": slug})
+    post = get_object_or_404(Post, {"slug": slug})
 
     if post.author_id != user.id:
         raise CustomException(

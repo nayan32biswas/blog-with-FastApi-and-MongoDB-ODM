@@ -95,7 +95,7 @@ def test_update_post() -> None:
         f"/api/v1/posts/{post.slug}", json={"title": "new"}, headers=get_header()
     )
     assert response.status_code == status.HTTP_200_OK
-    assert Post.get({"_id": post.slug}).title == "new"
+    assert Post.get({"slug": post.slug}).title == "new"
 
     # Try to update others post
     post = Post.get({"author_id": {"$ne": user.id}})
