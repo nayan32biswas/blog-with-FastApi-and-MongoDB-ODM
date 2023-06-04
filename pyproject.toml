@@ -19,6 +19,7 @@ uvicorn = "0.21.1"
 # mongodb-odm = "0.2.0"
 mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "main" }
 bcrypt = "4.0.1"
+python-slugify = "^8.0.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"

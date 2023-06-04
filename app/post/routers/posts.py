@@ -6,10 +6,12 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
 from mongodb_odm import ODMObjectId
+from slugify import slugify
 
 from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
 from app.base.utils import get_offset, update_partially
+from app.base.utils.string import rand_slug_str
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
@@ -26,6 +28,21 @@ from ..schemas.posts import (
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
+
+
+@router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
+def create_topics(
+    topic_data: TopicIn,
+    user: User = Depends(get_authenticated_user),
+) -> Any:
+    name = topic_data.name.lower()
+
+    topic, created = Topic.get_or_create({"name": name})
+    if created:
+        topic.user_id = user.id
+        topic.update()
+
+    return TopicOut.from_orm(topic)
 
 
 @router.get("/topics", status_code=status.HTTP_200_OK)
@@ -48,19 +65,52 @@ def get_topics(
     return {"count": topic_count, "results": results}
 
 
-@router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
-def create_topics(
-    topic_data: TopicIn,
-    user: User = Depends(get_authenticated_user),
+def get_short_description(description: Optional[str]) -> str:
+    if description:
+        return description[:200]
+    return ""
+
+
+@router.post(
+    "/posts",
+    status_code=status.HTTP_201_CREATED,
+    response_model=PostDetailsOut,
+)
+def create_posts(
+    post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
-    name = topic_data.name.lower()
+    short_description = post_data.short_description
+    if not post_data.short_description:
+        short_description = get_short_description(post_data.description)
 
-    topic, created = Topic.get_or_create({"name": name})
-    if created:
-        topic.user_id = user.id
-        topic.update()
+    post = Post(
+        author_id=user.id,
+        slug=str(ObjectId()),
+        title=post_data.title,
+        short_description=short_description,
+        description=post_data.description,
+        cover_image=post_data.cover_image,
+        publish_at=post_data.publish_at,
+        topic_ids=[ODMObjectId(id) for id in post_data.topic_ids],
+    ).create()
 
-    return TopicOut.from_orm(topic)
+    itr = 1
+    slug = slugify(post.title)
+    while True:
+        try:
+            new_slug = f"{slug}-{rand_slug_str(itr)}" if itr > 1 else slug
+            post.update(raw={"$set": {"slug": new_slug}})
+            post.slug = new_slug
+            break
+        except Exception:
+            itr += 1
+
+    post.author = user
+    post.topics = [
+        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
+    ]
+
+    return {"message": "Post Created", "slug": post.slug}
 
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
@@ -93,43 +143,6 @@ def get_posts(
     return {"count": post_count, "results": results}
 
 
-def get_short_description(description: Optional[str]) -> str:
-    if description:
-        return description[:200]
-    return ""
-
-
-@router.post(
-    "/posts",
-    status_code=status.HTTP_201_CREATED,
-    response_model=PostDetailsOut,
-)
-def create_posts(
-    post_data: PostCreate, user: User = Depends(get_authenticated_user)
-) -> Any:
-    short_description = post_data.short_description
-    if not post_data.short_description:
-        short_description = get_short_description(post_data.description)
-
-    post = Post(
-        author_id=user.id,
-        title=post_data.title,
-        short_description=short_description,
-        description=post_data.description,
-        cover_image=post_data.cover_image,
-        publish_at=post_data.publish_at,
-        topic_ids=[ODMObjectId(id) for id in post_data.topic_ids],
-    ).create()
-
-    post.author = user
-    post.topics = [
-        TopicOut.from_orm(topic)
-        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
-    ]
-
-    return PostDetailsOut.from_orm(post)
-
-
 @router.get("/posts/{post_id}", status_code=status.HTTP_200_OK)
 def get_post_details(
     post_id: ObjectIdStr,
@@ -149,11 +162,10 @@ def get_post_details(
             detail="Object not found.",
         )
     post.topics = [
-        TopicOut.from_orm(topic)
-        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
+        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
-    return PostDetailsOut.from_orm(post)
+    return {"message": "Post Updated"}
 
 
 @router.patch(

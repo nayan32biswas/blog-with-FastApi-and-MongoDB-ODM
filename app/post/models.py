@@ -28,6 +28,7 @@ class Post(Document):
     author_id: ODMObjectId = Field(...)
 
     title: str = Field(max_length=255)
+    slug: str = Field(max_length=300)
     short_description: Optional[str] = Field(max_length=512, default=None)
     cover_image: Optional[str] = None
     description: Optional[str] = None
@@ -45,6 +46,7 @@ class Post(Document):
 
     class Config(Document.Config):
         indexes = [
+            IndexModel([("slug", ASCENDING)], unique=True),
             IndexModel([("author", ASCENDING)]),
             IndexModel([("topics", ASCENDING)]),
         ]

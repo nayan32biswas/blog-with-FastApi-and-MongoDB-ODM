@@ -22,21 +22,6 @@ class TopicOut(BaseModel):
         orm_mode = True
 
 
-class PostListOut(BaseModel):
-    id: ObjectIdStr
-    author: Optional[PublicUserListOut]
-    title: str = Field(max_length=255)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
-    total_comment: int = Field(default=0)
-    total_reaction: int = Field(default=0)
-
-    publish_at: Optional[datetime] = None
-
-    class Config:
-        orm_mode = True
-
-
 class PostCreate(BaseModel):
     title: str = Field(max_length=255)
     short_description: Optional[str] = Field(max_length=512, default=None)
@@ -48,6 +33,21 @@ class PostCreate(BaseModel):
 
     description: Optional[str] = None
     topic_ids: List[ObjectIdStr] = []
+
+    class Config:
+        orm_mode = True
+
+
+class PostListOut(BaseModel):
+    author: Optional[PublicUserListOut]
+    title: str = Field(max_length=255)
+    slug: str = Field(max_length=300)
+    short_description: Optional[str] = Field(max_length=512, default=None)
+    cover_image: Optional[str] = None
+    total_comment: int = Field(default=0)
+    total_reaction: int = Field(default=0)
+
+    publish_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
@@ -68,7 +68,7 @@ class PostUpdate(BaseModel):
 
 
 class PostDetailsOut(BaseModel):
-    id: ObjectIdStr
+    slug: str = Field(max_length=300)
     author: Optional[PublicUserListOut] = None
     title: str = Field(max_length=255)
     short_description: Optional[str] = Field(max_length=512, default=None)
