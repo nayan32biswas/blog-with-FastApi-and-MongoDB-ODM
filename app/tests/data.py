@@ -7,9 +7,11 @@ from functools import lru_cache
 from typing import Any, Dict, List, Tuple
 from uuid import uuid4
 
+from bson import ObjectId
 from faker import Faker
 from mongodb_odm import InsertOne, apply_indexes
 from mongodb_odm.connection import db
+from slugify import slugify
 
 from app.base.utils.decorator import timing
 from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
@@ -90,7 +92,8 @@ def _create_users(total_user: Any) -> bool:
                 )
             )
         )
-    User.bulk_write(requests=write_users)
+    if write_users:
+        User.bulk_write(requests=write_users)
     return True
 
 
@@ -120,14 +123,19 @@ def create_topics(N: int) -> None:
         log.info("Topic already exists")
         return
 
-    write_topics = [InsertOne(Topic.to_mongo(Topic(name=value))) for value in data_set]
-    Topic.bulk_write(requests=write_topics)
+    write_topics = [
+        InsertOne(Topic.to_mongo(Topic(name=value, slug=f"{slugify(value)}-{idx}")))
+        for idx, value in enumerate(data_set)
+    ]
+    if write_topics:
+        Topic.bulk_write(requests=write_topics)
     log.info(f"{len(data_set)} topic created")
 
 
 def get_post() -> Dict[str, Any]:
+    title = fake.sentence()
     return {
-        "title": fake.sentence(),
+        "title": title,
         "publish_at": datetime.utcnow(),
         "short_description": None,
         "description": fake.text(),
@@ -146,18 +154,21 @@ def _create_posts(total_post: Any) -> bool:
     write_posts = []
     for i in range(total_post):
         topic_lo, topic_hi = get_random_range(total_topic, 5, 10)
+        post_data = get_post()
         write_posts.append(
             InsertOne(
                 Post.to_mongo(
                     Post(
-                        **get_post(),
+                        **post_data,
+                        slug=f"{slugify(post_data['title'])}-{ObjectId()}",
                         author_id=user_ids[i % total_user],
                         topic_ids=topic_ids[topic_lo:topic_hi],
                     )
                 )
             )
         )
-    Post.bulk_write(requests=write_posts)
+    if write_posts:
+        Post.bulk_write(requests=write_posts)
     return True
 
 
@@ -191,7 +202,8 @@ def _create_reactions(total_reaction: Any) -> None:
                 )
             )
         )
-    Reaction.bulk_write(requests=write_reactions)
+    if write_reactions:
+        Reaction.bulk_write(requests=write_reactions)
 
 
 @timing
@@ -236,7 +248,8 @@ def _create_comments(total_comment: Any) -> None:
                     )
                 )
             )
-    Comment.bulk_write(requests=write_comments)
+    if write_comments:
+        Comment.bulk_write(requests=write_comments)
 
 
 @timing

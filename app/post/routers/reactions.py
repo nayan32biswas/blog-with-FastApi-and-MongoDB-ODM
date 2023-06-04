@@ -1,11 +1,9 @@
 import logging
 from typing import Any
 
-from bson import ObjectId
 from fastapi import APIRouter, Depends, status
 from mongodb_odm import ODMObjectId
 
-from app.base.custom_types import ObjectIdStr
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user
 from app.user.models import User
@@ -20,12 +18,12 @@ def update_total_reaction(post_id: Any, val: int) -> None:
     Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_reaction": val}})
 
 
-@router.post("/posts/{post_id}/reactions", status_code=status.HTTP_200_OK)
+@router.post("/posts/{slug}/reactions", status_code=status.HTTP_200_OK)
 def create_reactions(
-    post_id: ObjectIdStr,
+    slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+    post = get_object_or_404(Post, {"slug": slug})
     update_result = Reaction.update_one(
         {"post_id": post.id, "$where": "this.user_ids.length < 100"},
         {"$addToSet": {"user_ids": user.id}},
@@ -38,25 +36,25 @@ def create_reactions(
 
     if update_result.modified_count or update_result.upserted_id is not None:
         # increase total comment for post
-        update_total_reaction(post_id, 1)
+        update_total_reaction(post.id, 1)
         message = "Reaction Added"
     else:
         message = "You already have an reaction in this post"
     return {"message": message}
 
 
-@router.delete("/posts/{post_id}/reactions", status_code=status.HTTP_200_OK)
+@router.delete("/posts/{slug}/reactions", status_code=status.HTTP_200_OK)
 def delete_post_reactions(
-    post_id: ObjectIdStr,
+    slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+    post = get_object_or_404(Post, {"slug": slug})
     update_result = Reaction.update_one(
         {"post_id": post.id, "user_ids": {"$in": [user.id]}},
         {"$pull": {"user_ids": user.id}},
     )
     if update_result.modified_count:
         # decrease total comment for post
-        update_total_reaction(post_id, -1)
+        update_total_reaction(post.id, -1)
 
     return {"message": "Reaction Deleted"}

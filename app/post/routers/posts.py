@@ -21,6 +21,7 @@ from ..schemas.posts import (
     PostCreate,
     PostDetailsOut,
     PostListOut,
+    PostOut,
     PostUpdate,
     TopicIn,
     TopicOut,
@@ -39,9 +40,25 @@ def create_topics(
 
     topic, created = Topic.get_or_create({"name": name})
     if created:
-        topic.user_id = user.id
-        topic.update()
+        updated = False
+        slug = slugify(topic.name)
 
+        for i in range(1, 10):
+            try:
+                new_slug = f"{slug}-{rand_slug_str(i)}" if i > 1 else slug
+                topic.update({"$set": {"user_id": user.id, "slug": new_slug}})
+                updated = True
+                break
+            except Exception:
+                pass
+        if updated is False:
+            topic.delete()
+            raise CustomException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Name error",
+                code=ExType.VALIDATION_ERROR,
+                field="name",
+            )
     return TopicOut.from_orm(topic)
 
 
@@ -83,6 +100,10 @@ def create_posts(
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
 
+    topic_ids = [
+        obj["_id"] for obj in Topic.find_raw({"slug": {"$in": post_data.topics}})
+    ]
+
     post = Post(
         author_id=user.id,
         slug=str(ObjectId()),
@@ -91,26 +112,30 @@ def create_posts(
         description=post_data.description,
         cover_image=post_data.cover_image,
         publish_at=post_data.publish_at,
-        topic_ids=[ODMObjectId(id) for id in post_data.topic_ids],
+        topic_ids=topic_ids,
     ).create()
 
-    itr = 1
+    is_slug_saved = False
     slug = slugify(post.title)
-    while True:
+    for i in range(1, 10):
         try:
-            new_slug = f"{slug}-{rand_slug_str(itr)}" if itr > 1 else slug
+            new_slug = f"{slug}-{rand_slug_str(i)}" if i > 1 else slug
             post.update(raw={"$set": {"slug": new_slug}})
             post.slug = new_slug
+            is_slug_saved = True
             break
         except Exception:
-            itr += 1
+            pass
+    if is_slug_saved is False:
+        post.delete()
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Title error",
+            code=ExType.VALIDATION_ERROR,
+            field="title",
+        )
 
-    post.author = user
-    post.topics = [
-        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
-    ]
-
-    return {"message": "Post Created", "slug": post.slug}
+    return PostOut.from_orm(post).dict()
 
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
@@ -143,13 +168,13 @@ def get_posts(
     return {"count": post_count, "results": results}
 
 
-@router.get("/posts/{post_id}", status_code=status.HTTP_200_OK)
+@router.get("/posts/{slug}", status_code=status.HTTP_200_OK)
 def get_post_details(
-    post_id: ObjectIdStr,
+    slug: str,
     _: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Any:
     filter: Dict[str, Any] = {
-        "_id": ObjectId(post_id),
+        "slug": slug,
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
     }
     try:
@@ -165,20 +190,20 @@ def get_post_details(
         TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
-    return {"message": "Post Updated"}
+    return PostDetailsOut.from_orm(post).dict()
 
 
 @router.patch(
-    "/posts/{post_id}",
+    "/posts/{slug}",
     status_code=status.HTTP_200_OK,
     response_model=PostDetailsOut,
 )
 def update_posts(
-    post_id: ObjectIdStr,
+    slug: str,
     post_data: PostUpdate,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+    post = get_object_or_404(Post, {"_id": slug})
 
     if post.author_id != user.id:
         raise CustomException(
@@ -194,17 +219,15 @@ def update_posts(
         post.short_description = get_short_description(post_data.description)
     post.update()
 
-    post.author = user
-
-    return PostDetailsOut.from_orm(post)
+    return {"message": "Post Updated"}
 
 
-@router.delete("/posts/{post_id}", status_code=status.HTTP_200_OK)
+@router.delete("/posts/{slug}", status_code=status.HTTP_200_OK)
 def delete_post(
-    post_id: ObjectIdStr,
+    slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+    post = get_object_or_404(Post, {"_id": slug})
 
     if post.author_id != user.id:
         raise CustomException(

@@ -17,10 +17,12 @@ from app.user.models import User
 class Topic(Document):
     user_id: Optional[ODMObjectId] = None
     name: str = Field(max_length=127)
+    slug: Optional[str] = Field(max_length=127)
 
     class Config(Document.Config):
         indexes = [
             IndexModel([("name", ASCENDING)], unique=True),
+            IndexModel([("slug", ASCENDING)], unique=True),
         ]
 
 

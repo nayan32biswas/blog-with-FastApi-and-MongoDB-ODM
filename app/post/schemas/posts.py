@@ -3,7 +3,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.base.custom_types import ObjectIdStr
 from app.user.schemas import PublicUserListOut
 
 
@@ -15,8 +14,8 @@ class TopicIn(BaseModel):
 
 
 class TopicOut(BaseModel):
-    id: ObjectIdStr
     name: str
+    slug: str
 
     class Config:
         orm_mode = True
@@ -32,22 +31,7 @@ class PostCreate(BaseModel):
     publish_at: Optional[datetime] = None
 
     description: Optional[str] = None
-    topic_ids: List[ObjectIdStr] = []
-
-    class Config:
-        orm_mode = True
-
-
-class PostListOut(BaseModel):
-    author: Optional[PublicUserListOut]
-    title: str = Field(max_length=255)
-    slug: str = Field(max_length=300)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
-    total_comment: int = Field(default=0)
-    total_reaction: int = Field(default=0)
-
-    publish_at: Optional[datetime] = None
+    topics: List[str] = []
 
     class Config:
         orm_mode = True
@@ -61,15 +45,42 @@ class PostUpdate(BaseModel):
     publish_at: Optional[datetime] = None
 
     description: Optional[str] = None
-    topic_ids: List[ObjectIdStr] = []
+    topic_ids: List[str] = []
+
+    class Config:
+        orm_mode = True
+
+
+class PostOut(BaseModel):
+    title: str = Field(max_length=255)
+    slug: str = Field(max_length=300)
+    short_description: Optional[str] = Field(max_length=512, default=None)
+    cover_image: Optional[str] = None
+
+    publish_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
+
+class PostListOut(BaseModel):
+    author: Optional[PublicUserListOut] = None
+    title: str = Field(max_length=255)
+    slug: str = Field(max_length=300)
+    short_description: Optional[str] = Field(max_length=512, default=None)
+    cover_image: Optional[str] = None
+    total_comment: int = Field(default=0)
+    total_reaction: int = Field(default=0)
+
+    publish_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
 
 
 class PostDetailsOut(BaseModel):
-    slug: str = Field(max_length=300)
     author: Optional[PublicUserListOut] = None
+    slug: str = Field(max_length=300)
     title: str = Field(max_length=255)
     short_description: Optional[str] = Field(max_length=512, default=None)
     cover_image: Optional[str] = None
