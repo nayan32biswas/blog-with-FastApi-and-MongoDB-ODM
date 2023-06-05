@@ -11,8 +11,8 @@ from slugify import slugify
 from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
 from app.base.utils import get_offset, update_partially
-from app.base.utils.string import rand_slug_str
 from app.base.utils.query import get_object_or_404
+from app.base.utils.string import rand_slug_str
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
@@ -188,7 +188,8 @@ def get_post_details(
             detail="Object not found.",
         )
     post.topics = [
-        TopicOut.from_orm(topic) for topic in Topic.find({"_id": {"$in": post.topic_ids}})
+        TopicOut.from_orm(topic)
+        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
     return PostDetailsOut.from_orm(post).dict()

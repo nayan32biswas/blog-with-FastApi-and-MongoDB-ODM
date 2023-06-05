@@ -159,6 +159,7 @@ def test_update_comment() -> None:
 
     # Try to update others comment should get 403
     comment = Comment.get_random_one({"user_id": {"$ne": user.id}})
+    post = Post.get({"_id": comment.post_id})
     response = client.put(
         f"/api/v1/posts/{post.slug}/comments/{comment.id}",
         json={"description": fake.text()},
@@ -178,6 +179,7 @@ def test_delete_comment() -> None:
 
     # Try to delete others comment should get 403
     comment = Comment.get_random_one({"user_id": {"$ne": user.id}})
+    post = Post.get({"_id": comment.post_id})
     response = client.delete(
         f"/api/v1/posts/{post.slug}/comments/{comment.id}", headers=get_header()
     )
@@ -197,6 +199,7 @@ def test_create_replies() -> None:
 
     # Reply on others comment
     comment = Comment.get_random_one({"user_id": {"$ne": user.id}})
+    post = Post.get({"_id": comment.post_id})
     response = client.post(
         f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies",
         json={"description": fake.text()},
@@ -275,9 +278,13 @@ def test_reactions() -> None:
     assert Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is True
 
     # Delete reaction
-    response = client.delete(f"/api/v1/posts/{post.slug}/reactions", headers=get_header())
+    response = client.delete(
+        f"/api/v1/posts/{post.slug}/reactions", headers=get_header()
+    )
     assert response.status_code == status.HTTP_200_OK
-    assert Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is False
+    assert (
+        Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is False
+    )
 
 
 def test_reactions_auth() -> None:
