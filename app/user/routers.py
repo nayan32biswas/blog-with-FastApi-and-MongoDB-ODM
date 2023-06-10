@@ -32,7 +32,7 @@ def registration(data: Registration) -> Any:
             status_code=status.HTTP_400_BAD_REQUEST,
             code=ExType.USERNAME_EXISTS,
             detail="Username already exists.",
-            field="email",
+            field="username",
         )
 
     try:
