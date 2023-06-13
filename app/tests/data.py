@@ -134,11 +134,12 @@ def create_topics(N: int) -> None:
 
 def get_post() -> Dict[str, Any]:
     title = fake.sentence()
+    description = fake.text()
     return {
         "title": title,
         "publish_at": datetime.utcnow(),
-        "short_description": None,
-        "description": fake.text(),
+        "short_description": description[:200],
+        "description": description,
         "cover_image": None,
     }
 
