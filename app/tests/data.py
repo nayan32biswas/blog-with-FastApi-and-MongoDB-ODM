@@ -118,7 +118,7 @@ def create_users(N: int) -> None:
 
 
 def create_topics(N: int) -> None:
-    data_set = {rand_str(random.randint(5, 15)).lower() for _ in range(N)}
+    data_set = {" ".join(fake.words(random.randint(1, 3))) for _ in range(N)}
     if Topic.exists() is True:
         log.info("Topic already exists")
         return
@@ -134,7 +134,7 @@ def create_topics(N: int) -> None:
 
 def get_post() -> Dict[str, Any]:
     title = fake.sentence()
-    description = fake.text()
+    description = fake.text(random.randint(1000, 10000))
     return {
         "title": title,
         "publish_at": datetime.utcnow(),
