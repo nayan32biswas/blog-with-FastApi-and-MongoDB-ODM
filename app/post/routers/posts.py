@@ -73,7 +73,8 @@ def get_topics(
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {}
     if q:
-        filter["name"] = re.compile(q, re.IGNORECASE)
+        # Inefficient query
+        filter["name"] = {"$regex": re.compile(q, re.IGNORECASE)}
 
     topic_qs = Topic.find(filter=filter, limit=limit, skip=offset)
     results = [TopicOut.from_orm(topic) for topic in topic_qs]
@@ -157,7 +158,8 @@ def get_posts(
     if topics:
         filter["topic_ids"] = {"$in": [ODMObjectId(id) for id in topics]}
     if q:
-        filter["title"] = q
+        # Inefficient query
+        filter["title"] = {"$regex": re.compile(q, re.IGNORECASE)}
 
     post_qs = Post.find(
         filter=filter, limit=limit, skip=offset, projection={"description": 0}
