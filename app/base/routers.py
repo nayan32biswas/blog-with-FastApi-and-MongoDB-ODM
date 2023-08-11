@@ -1,9 +1,13 @@
 import logging
-from typing import Any
+import os
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi.responses import FileResponse
 
-from app.user.dependencies import get_authenticated_user
+from app.base.config import MEDIA_ROOT
+from app.base.exceptions import CustomException, ExType
+from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
 from .utils.file import save_file
@@ -19,3 +23,20 @@ async def create_upload_image(
 ) -> Any:
     image_path = save_file(image, root_folder="image")
     return {"image_path": image_path}
+
+
+@router.get("/media/{file_path:path}")
+async def get_image(
+    file_path: str,
+    _: Optional[User] = Depends(get_authenticated_user_or_none),
+):
+    file_path = f"{MEDIA_ROOT}/{file_path}"
+
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    else:
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.OBJECT_NOT_FOUND,
+            detail="file not found",
+        )
