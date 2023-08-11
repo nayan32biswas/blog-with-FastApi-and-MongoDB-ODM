@@ -21,7 +21,7 @@ def get_object_or_404(
     except ObjectDoesNotExist:
         logger.warning(f"404 on:{Model.__name__} filter:{kwargs}")
         raise CustomException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_404_NOT_FOUND,
             code=ExType.OBJECT_NOT_FOUND,
             detail=detail,
         )

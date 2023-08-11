@@ -34,7 +34,7 @@ def get_comments(
     post = get_object_or_404(Post, filter={"slug": slug})
     filter = {"post_id": post.id}
 
-    comment_qs = Comment.find(filter, skip=offset)
+    comment_qs = Comment.find(filter, skip=offset, limit=limit)
     # Load related user only
     comments = Comment.load_related(comment_qs, fields=["user"])
 

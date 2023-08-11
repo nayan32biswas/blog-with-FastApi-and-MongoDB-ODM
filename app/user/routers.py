@@ -1,16 +1,24 @@
 import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.base.exceptions import CustomException, ExType
 from app.base.utils import update_partially
+from app.base.utils.query import get_object_or_404
 
-from .dependencies import get_authenticated_user
+from .dependencies import get_authenticated_user, get_authenticated_user_or_none
 from .models import User
-from .schemas import LoginIn, Registration, UpdateAccessTokenIn, UserIn, UserOut
+from .schemas import (
+    LoginIn,
+    PublicUserProfile,
+    Registration,
+    UpdateAccessTokenIn,
+    UserIn,
+    UserOut,
+)
 from .utils import (
     authenticate_user,
     create_access_token,
@@ -114,3 +122,12 @@ def logout_from_all_device(user: User = Depends(get_authenticated_user)) -> Any:
     user.random_str = User.new_random_str()
     user.update()
     return {"message": "Logged out."}
+
+
+@router.get("/api/v1/users/{username}", response_model=UserOut)
+def ger_user_public_profile(
+    username: str,
+    _: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Any:
+    public_user = get_object_or_404(User, filter={"username": username})
+    return PublicUserProfile.from_orm(public_user)

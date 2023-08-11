@@ -146,15 +146,17 @@ def get_posts(
     limit: int = 20,
     q: Optional[str] = Query(default=None),
     topics: List[ObjectIdStr] = Query(default=[]),
-    author_id: Optional[ObjectIdStr] = Query(default=None),
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
+    username: Optional[str] = Query(default=None),
+    user: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Dict[str, Any]:
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
     }
-    if author_id:
-        filter["author_id"] = ObjectId(author_id)
+    if username:
+        filter["username"] = username
+        if user and user.username == username:
+            filter.pop("publish_at")
     if topics:
         filter["topic_ids"] = {"$in": [ODMObjectId(id) for id in topics]}
     if q:
@@ -174,18 +176,26 @@ def get_posts(
 @router.get("/posts/{slug}", status_code=status.HTTP_200_OK)
 def get_post_details(
     slug: str,
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
+    user: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Any:
     filter: Dict[str, Any] = {
         "slug": slug,
-        "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
+        # "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
     }
+
     try:
         post = Post.get(filter=filter)
+        if post.publish_at is None or post.publish_at < datetime.utcnow():
+            if user is None or user.id != post.author_id:
+                raise CustomException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    code=ExType.PERMISSION_ERROR,
+                    detail="You don't have permission to get this object.",
+                )
         post.author = User.get({"_id": post.author_id})
     except Exception:
         raise CustomException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_404_NOT_FOUND,
             code=ExType.OBJECT_NOT_FOUND,
             detail="Object not found.",
         )
