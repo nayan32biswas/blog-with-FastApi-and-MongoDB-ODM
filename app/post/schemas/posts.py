@@ -25,8 +25,6 @@ class PostCreate(BaseModel):
     title: str = Field(max_length=255)
     short_description: Optional[str] = Field(max_length=512, default=None)
     cover_image: Optional[str] = None
-    total_comment: int = Field(default=0)
-    total_reaction: int = Field(default=0)
 
     publish_at: Optional[datetime] = None
 
