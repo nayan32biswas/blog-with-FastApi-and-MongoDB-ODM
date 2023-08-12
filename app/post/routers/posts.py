@@ -1,6 +1,7 @@
 import logging
 import re
 from datetime import datetime
+from time import sleep
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
@@ -98,13 +99,25 @@ def get_short_description(description: Optional[str]) -> str:
 def create_posts(
     post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
+    sleep(5)
     short_description = post_data.short_description
+
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
 
     topic_ids = [
         obj["_id"] for obj in Topic.find_raw({"slug": {"$in": post_data.topics}})
     ]
+
+    if post_data.publish_at and post_data.publish_at < datetime.utcnow():
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please choose future date.",
+            code=ExType.VALIDATION_ERROR,
+            field="publish_at",
+        )
+    if post_data.publish_now:
+        post_data.publish_at = datetime.utcnow()
 
     post = Post(
         author_id=user.id,
@@ -221,6 +234,17 @@ def update_posts(
             code=ExType.PERMISSION_ERROR,
             detail="You don't have access to update this post.",
         )
+
+    if post_data.publish_at and post.publish_at != post_data.publish_at:
+        if post_data.publish_at < datetime.utcnow():
+            raise CustomException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please choose future date.",
+                code=ExType.VALIDATION_ERROR,
+                field="publish_at",
+            )
+    if post_data.publish_now:
+        post_data.publish_at = datetime.utcnow()
 
     post = update_partially(post, post_data)
 

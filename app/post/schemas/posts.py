@@ -27,6 +27,7 @@ class PostCreate(BaseModel):
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None
+    publish_now: Optional[bool] = None
 
     description: Optional[str] = None
     topics: List[str] = []
@@ -41,6 +42,7 @@ class PostUpdate(BaseModel):
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None
+    publish_now: Optional[bool] = None
 
     description: Optional[str] = None
     topic_ids: List[str] = []
