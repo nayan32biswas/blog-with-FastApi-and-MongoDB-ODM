@@ -1,7 +1,6 @@
 import logging
 import re
 from datetime import datetime
-from time import sleep
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
@@ -9,7 +8,6 @@ from fastapi import APIRouter, Depends, Query, status
 from mongodb_odm import ODMObjectId
 from slugify import slugify
 
-from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
 from app.base.utils import get_offset, update_partially
 from app.base.utils.query import get_object_or_404
@@ -99,7 +97,6 @@ def get_short_description(description: Optional[str]) -> str:
 def create_posts(
     post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
-    sleep(5)
     short_description = post_data.short_description
 
     if not post_data.short_description:
@@ -158,7 +155,7 @@ def get_posts(
     page: int = 1,
     limit: int = 20,
     q: Optional[str] = Query(default=None),
-    topics: List[ObjectIdStr] = Query(default=[]),
+    topics: List[str] = Query(default=[]),
     username: Optional[str] = Query(default=None),
     user: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Dict[str, Any]:
@@ -171,13 +168,23 @@ def get_posts(
         if user and user.username == username:
             filter.pop("publish_at")
     if topics:
-        filter["topic_ids"] = {"$in": [ODMObjectId(id) for id in topics]}
+        topic_ids = [
+            ODMObjectId(obj["_id"])
+            for obj in Topic.find_raw({"slug": {"$in": topics}}, projection={"slug": 1})
+        ]
+        filter["topic_ids"] = {"$in": topic_ids}
     if q:
         # Inefficient query
         filter["title"] = {"$regex": re.compile(q, re.IGNORECASE)}
 
+    sort = [("_id", -1)]
+
     post_qs = Post.find(
-        filter=filter, limit=limit, skip=offset, projection={"description": 0}
+        filter=filter,
+        sort=sort,
+        limit=limit,
+        skip=offset,
+        projection={"description": 0},
     )
     results = [PostListOut.from_orm(post).dict() for post in Post.load_related(post_qs)]
 
@@ -198,7 +205,7 @@ def get_post_details(
 
     try:
         post = Post.get(filter=filter)
-        if post.publish_at is None or post.publish_at < datetime.utcnow():
+        if post.publish_at is None or post.publish_at > datetime.utcnow():
             if user is None or user.id != post.author_id:
                 raise CustomException(
                     status_code=status.HTTP_403_FORBIDDEN,
