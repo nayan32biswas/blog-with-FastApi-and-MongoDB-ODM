@@ -12,6 +12,7 @@ from app.base.utils.query import get_object_or_404
 from .dependencies import get_authenticated_user, get_authenticated_user_or_none
 from .models import User
 from .schemas import (
+    ChangePasswordIn,
     LoginIn,
     PublicUserProfile,
     Registration,
@@ -25,6 +26,7 @@ from .utils import (
     create_access_token_from_refresh_token,
     create_refresh_token,
     get_password_hash,
+    verify_password,
 )
 
 router = APIRouter()
@@ -105,12 +107,30 @@ def update_access_token(
     return {"access_token": access_token}
 
 
+@router.post("/api/v1/change-password")
+def change_password(
+    data: ChangePasswordIn, user: User = Depends(get_authenticated_user)
+) -> Any:
+    if not user.password or not verify_password(data.current_password, user.password):
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.AUTHENTICATION_ERROR,
+            field="current_password",
+            detail="Password did not match",
+        )
+
+    hash_password = get_password_hash(data.new_password)
+
+    user.update(raw={"$set": {"password": hash_password}})
+    return {"message": "Password changed successfully."}
+
+
 @router.get("/api/v1/me", response_model=UserOut)
 def ger_me(user: User = Depends(get_authenticated_user)) -> Any:
     return UserOut.from_orm(user)
 
 
-@router.patch("/api/v1/update-user", response_model=UserOut)
+@router.patch("/api/v1/update-me", response_model=UserOut)
 def update_user(user_data: UserIn, user: User = Depends(get_authenticated_user)) -> Any:
     user = update_partially(user, user_data)
     user.update()

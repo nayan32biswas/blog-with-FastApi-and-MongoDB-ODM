@@ -85,7 +85,7 @@ def test_get_me() -> None:
 def test_update_user() -> None:
     new_full_name = "New Name"
     response = client.patch(
-        "/api/v1/update-user", json={"full_name": new_full_name}, headers=get_header()
+        "/api/v1/update-me", json={"full_name": new_full_name}, headers=get_header()
     )
 
     assert response.status_code == status.HTTP_200_OK
