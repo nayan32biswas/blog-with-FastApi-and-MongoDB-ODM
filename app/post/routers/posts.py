@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
@@ -30,14 +30,12 @@ router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-@router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
-def create_topics(
-    topic_data: TopicIn,
-    user: User = Depends(get_authenticated_user),
-) -> Any:
-    name = topic_data.name.lower()
+def create_topic(topic_name: str, user: User) -> Union[Topic, None]:
+    topic_name = topic_name.lower()
+    if not topic_name:
+        return None
 
-    topic, created = Topic.get_or_create({"name": name})
+    topic, created = Topic.get_or_create({"name": topic_name})
     if created:
         updated = False
         slug = slugify(topic.name)
@@ -59,6 +57,22 @@ def create_topics(
                 code=ExType.VALIDATION_ERROR,
                 field="name",
             )
+    return topic
+
+
+@router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
+def create_topics(
+    topic_data: TopicIn,
+    user: User = Depends(get_authenticated_user),
+) -> Any:
+    topic = create_topic(topic_data.name, user)
+    if not topic:
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.VALIDATION_ERROR,
+            field="topics",
+            detail="Invalid Topic name",
+        )
     return TopicOut.from_orm(topic)
 
 
@@ -89,6 +103,15 @@ def get_short_description(description: Optional[str]) -> str:
     return ""
 
 
+def get_or_create_post_topics(topics: List[str], user: User) -> List[ODMObjectId]:
+    topic_ids: List[ODMObjectId] = []
+    for topic_name in topics:
+        topic = create_topic(topic_name, user)
+        if topic:
+            topic_ids.append(topic.id)
+    return topic_ids
+
+
 @router.post(
     "/posts",
     status_code=status.HTTP_201_CREATED,
@@ -102,9 +125,7 @@ def create_posts(
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
 
-    topic_ids = [
-        obj["_id"] for obj in Topic.find_raw({"slug": {"$in": post_data.topics}})
-    ]
+    topic_ids = get_or_create_post_topics(post_data.topics, user)
 
     if post_data.publish_at and post_data.publish_at < datetime.utcnow():
         raise CustomException(
@@ -242,6 +263,8 @@ def update_posts(
             detail="You don't have access to update this post.",
         )
 
+    topic_ids = get_or_create_post_topics(post_data.topics, user)
+
     if post_data.publish_at and post.publish_at != post_data.publish_at:
         if post_data.publish_at < datetime.utcnow():
             raise CustomException(
@@ -258,6 +281,8 @@ def update_posts(
     post.short_description = post_data.short_description
     if not post.short_description and post_data.description:
         post.short_description = get_short_description(post_data.description)
+
+    post.topic_ids = topic_ids
     post.update()
 
     return {"message": "Post Updated"}

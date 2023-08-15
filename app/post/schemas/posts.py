@@ -45,7 +45,7 @@ class PostUpdate(BaseModel):
     publish_now: Optional[bool] = None
 
     description: Optional[str] = None
-    topic_ids: List[str] = []
+    topics: List[str] = []
 
     class Config:
         orm_mode = True
