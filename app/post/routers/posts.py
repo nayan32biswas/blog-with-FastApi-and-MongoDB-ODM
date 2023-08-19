@@ -185,9 +185,12 @@ def get_posts(
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
     }
     if username:
-        filter["username"] = username
         if user and user.username == username:
+            filter["author_id"] = user.id
             filter.pop("publish_at")
+        else:
+            user = User.get({"username": username})
+            filter["author_id"] = user.id
     if topics:
         topic_ids = [
             ODMObjectId(obj["_id"])
