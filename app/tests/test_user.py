@@ -5,7 +5,7 @@ from app.main import app
 from app.user.models import User
 from app.user.utils import create_access_token, create_refresh_token
 
-from .config import get_header, init_config  # noqa
+from .config import get_header, init_config, get_user  # noqa
 from .data import users
 
 client = TestClient(app)
@@ -177,3 +177,11 @@ def test_change_password() -> None:
     ), "User should get error with new password"
 
     _ = User.delete_many({"username": NEW_USERNAME})
+
+
+def test_user_public_profile() -> None:
+    user = get_user()
+    response = client.get(f"/api/v1/users/{user.username}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["username"] == user.username, "'username' does not match"

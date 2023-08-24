@@ -50,7 +50,7 @@ def delete_post_reactions(
 ) -> Any:
     post = get_object_or_404(Post, {"slug": slug})
     update_result = Reaction.update_one(
-        {"post_id": post.id, "user_ids": {"$in": [user.id]}},
+        {"post_id": post.id, "user_ids": user.id},
         {"$pull": {"user_ids": user.id}},
     )
     if update_result.modified_count:

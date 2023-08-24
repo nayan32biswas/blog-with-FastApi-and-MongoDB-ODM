@@ -56,6 +56,26 @@ def test_get_posts() -> None:
     assert response.status_code == status.HTTP_200_OK
 
 
+def test_get_user_posts() -> None:
+    user = get_user()
+    response = client.get(f"/api/v1/posts?username={user.username}")
+    assert response.status_code == status.HTTP_200_OK
+
+    assert "count" in response.json()
+    assert "results" in response.json()
+
+
+def test_get_user_own_posts() -> None:
+    user = get_user()
+    response = client.get(
+        f"/api/v1/posts?username={user.username}", headers=get_header()
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    assert "count" in response.json()
+    assert "results" in response.json()
+
+
 def test_create_posts() -> None:
     payload = {
         "title": fake.sentence(),
@@ -276,16 +296,14 @@ def test_reactions() -> None:
     post = Post.get({})
     response = client.post(f"/api/v1/posts/{post.slug}/reactions", headers=get_header())
     assert response.status_code == status.HTTP_200_OK
-    assert Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is True
+    assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is True
 
     # Delete reaction
     response = client.delete(
         f"/api/v1/posts/{post.slug}/reactions", headers=get_header()
     )
     assert response.status_code == status.HTTP_200_OK
-    assert (
-        Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is False
-    )
+    assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is False
 
 
 def test_reactions_auth() -> None:
