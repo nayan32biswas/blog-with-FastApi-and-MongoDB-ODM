@@ -59,10 +59,11 @@ def test_get_posts() -> None:
 def test_create_posts() -> None:
     payload = {
         "title": fake.sentence(),
-        "publish_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+        "publish_now": True,
         "short_description": None,
         "description": fake.text(),
         "cover_image": None,
+        "topics": [],
     }
 
     response = client.post("/api/v1/posts", json=payload)

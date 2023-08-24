@@ -69,7 +69,7 @@ def token_response(username: str, password: str) -> Any:
     user = authenticate_user(username, password)
     if not user or user.is_active is False:
         raise CustomException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             code=ExType.AUTHENTICATION_ERROR,
             detail="Incorrect username or password",
         )
