@@ -5,7 +5,7 @@ from app.main import app
 from app.user.models import User
 from app.user.utils import create_access_token, create_refresh_token
 
-from .config import get_header, init_config, get_user  # noqa
+from .config import get_header, get_user, init_config  # noqa
 from .data import users
 
 client = TestClient(app)

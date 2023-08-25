@@ -295,7 +295,7 @@ def test_reactions() -> None:
     user = get_user()
     post = Post.get({})
     response = client.post(f"/api/v1/posts/{post.slug}/reactions", headers=get_header())
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is True
 
     # Delete reaction

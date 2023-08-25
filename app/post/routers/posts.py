@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
@@ -30,33 +30,13 @@ router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-def create_topic(topic_name: str, user: User) -> Union[Topic, None]:
+def create_topic(topic_name: str, user: User) -> Topic:
     topic_name = topic_name.lower()
-    if not topic_name:
-        return None
 
     topic, created = Topic.get_or_create({"name": topic_name})
     if created:
-        updated = False
-        slug = slugify(topic.name)
-
-        for i in range(1, 10):
-            try:
-                new_slug = f"{slug}-{rand_slug_str(i)}" if i > 1 else slug
-                topic.update({"$set": {"user_id": user.id, "slug": new_slug}})
-                topic.slug = new_slug
-                updated = True
-                break
-            except Exception:
-                pass
-        if updated is False:
-            topic.delete()
-            raise CustomException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Name error",
-                code=ExType.VALIDATION_ERROR,
-                field="name",
-            )
+        topic.update(raw={"$set": {"user_id": user.id}})
+        topic.user_id = user.id
     return topic
 
 
@@ -86,8 +66,8 @@ def get_topics(
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {}
     if q:
-        # Inefficient query
-        filter["name"] = {"$regex": re.compile(q, re.IGNORECASE)}
+        q = q.lower()
+        filter["name"] = {"$regex": re.compile(q)}
 
     topic_qs = Topic.find(filter=filter, limit=limit, skip=offset)
     results = [TopicOut.from_orm(topic) for topic in topic_qs]

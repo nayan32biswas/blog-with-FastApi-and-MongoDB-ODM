@@ -18,7 +18,7 @@ def update_total_reaction(post_id: Any, val: int) -> None:
     Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_reaction": val}})
 
 
-@router.post("/posts/{slug}/reactions", status_code=status.HTTP_200_OK)
+@router.post("/posts/{slug}/reactions", status_code=status.HTTP_201_CREATED)
 def create_reactions(
     slug: str,
     user: User = Depends(get_authenticated_user),
