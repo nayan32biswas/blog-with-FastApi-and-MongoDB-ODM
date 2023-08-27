@@ -79,11 +79,7 @@ def create_comments(
     return CommentOut.from_orm(comment)
 
 
-@router.put(
-    "/posts/{slug}/comments/{comment_id}",
-    status_code=status.HTTP_200_OK,
-    response_model=CommentOut,
-)
+@router.put("/posts/{slug}/comments/{comment_id}", status_code=status.HTTP_200_OK)
 def update_comments(
     comment_id: ObjectIdStr,
     slug: str,
@@ -109,7 +105,7 @@ def update_comments(
     comment.update()
     comment.user = user
 
-    return CommentOut.from_orm(comment)
+    return {"message": "Comment Updated"}
 
 
 @router.delete("/posts/{slug}/comments/{comment_id}", status_code=status.HTTP_200_OK)

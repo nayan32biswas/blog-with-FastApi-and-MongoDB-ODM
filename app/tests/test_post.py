@@ -138,6 +138,7 @@ def test_delete_post() -> None:
     post = Post.get({"author_id": {"$ne": user.id}})
     response = client.delete(f"/api/v1/posts/{post.slug}", headers=get_header())
     assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert Post.exists({"slug": post.slug}) is True, "Post was not deleted"
 
 
 def test_get_comments() -> None:

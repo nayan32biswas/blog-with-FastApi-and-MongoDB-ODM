@@ -284,4 +284,5 @@ def delete_post(
             code=ExType.PERMISSION_ERROR,
             detail="You don't have access to delete this post.",
         )
+    post.delete()
     return {"message": "Deleted"}
