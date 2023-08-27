@@ -29,7 +29,7 @@ async def create_upload_image(
 async def get_image(
     file_path: str,
     _: Optional[User] = Depends(get_authenticated_user_or_none),
-):
+) -> Any:
     file_path = f"{MEDIA_ROOT}/{file_path}"
 
     if os.path.isfile(file_path):
