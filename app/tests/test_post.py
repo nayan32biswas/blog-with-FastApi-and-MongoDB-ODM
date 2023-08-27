@@ -6,7 +6,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.post.models import Comment, EmbeddedReply, Post, Reaction, Tag
+from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
 from app.user.models import User
 
 from .config import get_header, get_user, init_config  # noqa
@@ -15,24 +15,24 @@ client = TestClient(app)
 fake = Faker()
 
 
-def test_get_tags() -> None:
-    response = client.get("/api/v1/tags")
+def test_get_topics() -> None:
+    response = client.get("/api/v1/topics")
     assert response.status_code == status.HTTP_200_OK
 
     assert "count" in response.json()
     assert "results" in response.json()
 
-    response = client.get("/api/v1/tags", params={"q": "abc"})
+    response = client.get("/api/v1/topics", params={"q": "abc"})
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_create_tags() -> None:
+def test_create_topics() -> None:
     payload = {"name": fake.word()}
 
-    response = client.post("/api/v1/tags", json=payload)
+    response = client.post("/api/v1/topics", json=payload)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    response = client.post("/api/v1/tags", json=payload, headers=get_header())
+    response = client.post("/api/v1/topics", json=payload, headers=get_header())
     assert response.status_code == status.HTTP_201_CREATED
 
 
@@ -48,21 +48,42 @@ def test_get_posts() -> None:
     assert response.status_code == status.HTTP_200_OK
 
     user = get_user()
-    tag = Tag.get({})
+    topic = Topic.get({})
     response = client.get(
         "/api/v1/posts",
-        params={"q": "abc", "tags": [str(tag.id)], "author_id": str(user.id)},
+        params={"q": "abc", "topics": [str(topic.id)], "author_id": str(user.id)},
     )
     assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_user_posts() -> None:
+    user = get_user()
+    response = client.get(f"/api/v1/posts?username={user.username}")
+    assert response.status_code == status.HTTP_200_OK
+
+    assert "count" in response.json()
+    assert "results" in response.json()
+
+
+def test_get_user_own_posts() -> None:
+    user = get_user()
+    response = client.get(
+        f"/api/v1/posts?username={user.username}", headers=get_header()
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    assert "count" in response.json()
+    assert "results" in response.json()
 
 
 def test_create_posts() -> None:
     payload = {
         "title": fake.sentence(),
-        "publish_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+        "publish_now": True,
         "short_description": None,
         "description": fake.text(),
         "cover_image": None,
+        "topics": [],
     }
 
     response = client.post("/api/v1/posts", json=payload)
@@ -74,7 +95,7 @@ def test_create_posts() -> None:
 
 def test_get_post_details() -> None:
     post = Post.get({})
-    response = client.get(f"/api/v1/posts/{post.id}")
+    response = client.get(f"/api/v1/posts/{post.slug}")
     assert response.status_code == status.HTTP_200_OK
 
 
@@ -87,20 +108,20 @@ def test_update_post() -> None:
         "short_description": None,
         "cover_image": None,
     }
-    response = client.patch(f"/api/v1/posts/{post.id}", json=payload)
+    response = client.patch(f"/api/v1/posts/{post.slug}", json=payload)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     # Testing patch
     response = client.patch(
-        f"/api/v1/posts/{post.id}", json={"title": "new"}, headers=get_header()
+        f"/api/v1/posts/{post.slug}", json={"title": "new"}, headers=get_header()
     )
     assert response.status_code == status.HTTP_200_OK
-    assert Post.get({"_id": post.id}).title == "new"
+    assert Post.get({"slug": post.slug}).title == "new"
 
     # Try to update others post
     post = Post.get({"author_id": {"$ne": user.id}})
     response = client.patch(
-        f"/api/v1/posts/{post.id}",
+        f"/api/v1/posts/{post.slug}",
         json={"title": fake.sentence()},
         headers=get_header(),
     )
@@ -110,19 +131,20 @@ def test_update_post() -> None:
 def test_delete_post() -> None:
     user = get_user()
     post = Post.get({"author_id": user.id})
-    response = client.delete(f"/api/v1/posts/{post.id}", headers=get_header())
+    response = client.delete(f"/api/v1/posts/{post.slug}", headers=get_header())
     assert response.status_code == status.HTTP_200_OK
 
     # Try to delete others post
     post = Post.get({"author_id": {"$ne": user.id}})
-    response = client.delete(f"/api/v1/posts/{post.id}", headers=get_header())
+    response = client.delete(f"/api/v1/posts/{post.slug}", headers=get_header())
     assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert Post.exists({"slug": post.slug}) is True, "Post was not deleted"
 
 
 def test_get_comments() -> None:
     post = Post.get({})
 
-    response = client.get(f"/api/v1/posts/{post.id}/comments")
+    response = client.get(f"/api/v1/posts/{post.slug}/comments")
     assert response.status_code == status.HTTP_200_OK
 
 
@@ -130,7 +152,7 @@ def test_create_comment_on_any_post() -> None:
     user = get_user()
     post = Post.get_random_one({"author_id": user.id})
     response = client.post(
-        f"/api/v1/posts/{post.id}/comments",
+        f"/api/v1/posts/{post.slug}/comments",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -139,7 +161,7 @@ def test_create_comment_on_any_post() -> None:
     # Comment on others post valid action
     post = Post.get_random_one({"author_id": {"$ne": user.id}})
     response = client.post(
-        f"/api/v1/posts/{post.id}/comments",
+        f"/api/v1/posts/{post.slug}/comments",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -149,8 +171,9 @@ def test_create_comment_on_any_post() -> None:
 def test_update_comment() -> None:
     user = get_user()
     comment = Comment.get_random_one({"user_id": user.id})
+    post = Post.get({"_id": comment.post_id})
     response = client.put(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -158,8 +181,9 @@ def test_update_comment() -> None:
 
     # Try to update others comment should get 403
     comment = Comment.get_random_one({"user_id": {"$ne": user.id}})
+    post = Post.get({"_id": comment.post_id})
     response = client.put(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -169,15 +193,17 @@ def test_update_comment() -> None:
 def test_delete_comment() -> None:
     user = get_user()
     comment = Comment.get_random_one({"user_id": user.id})
+    post = Post.get({"_id": comment.post_id})
     response = client.delete(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}", headers=get_header()
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}", headers=get_header()
     )
     assert response.status_code == status.HTTP_200_OK
 
     # Try to delete others comment should get 403
     comment = Comment.get_random_one({"user_id": {"$ne": user.id}})
+    post = Post.get({"_id": comment.post_id})
     response = client.delete(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}", headers=get_header()
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}", headers=get_header()
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -185,8 +211,9 @@ def test_delete_comment() -> None:
 def test_create_replies() -> None:
     user = get_user()
     comment = Comment.get_random_one({"user_id": user.id})
+    post = Post.get({"_id": comment.post_id})
     response = client.post(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}/replies",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -194,8 +221,9 @@ def test_create_replies() -> None:
 
     # Reply on others comment
     comment = Comment.get_random_one({"user_id": {"$ne": user.id}})
+    post = Post.get({"_id": comment.post_id})
     response = client.post(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}/replies",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -225,8 +253,9 @@ def get_others_reply(user: User) -> Tuple[Comment, EmbeddedReply]:
 def test_update_replies() -> None:
     user = get_user()
     comment, reply = get_my_reply(user)
+    post = Post.get({"_id": comment.post_id})
     response = client.put(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}/replies/{reply.id}",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies/{reply.id}",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -234,8 +263,9 @@ def test_update_replies() -> None:
 
     # Try to update others replies. Should get 403
     comment, reply = get_others_reply(user)
+    post = Post.get({"_id": comment.post_id})
     response = client.put(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}/replies/{reply.id}",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies/{reply.id}",
         json={"description": fake.text()},
         headers=get_header(),
     )
@@ -245,16 +275,18 @@ def test_update_replies() -> None:
 def test_delete_replies() -> None:
     user = get_user()
     comment, reply = get_my_reply(user)
+    post = Post.get({"_id": comment.post_id})
     response = client.delete(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}/replies/{reply.id}",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies/{reply.id}",
         headers=get_header(),
     )
     assert response.status_code == status.HTTP_200_OK
 
     # Try to delete others replies. Should get 403
     comment, reply = get_others_reply(user)
+    post = Post.get({"_id": comment.post_id})
     response = client.delete(
-        f"/api/v1/posts/{comment.post_id}/comments/{comment.id}/replies/{reply.id}",
+        f"/api/v1/posts/{post.slug}/comments/{comment.id}/replies/{reply.id}",
         headers=get_header(),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -263,22 +295,22 @@ def test_delete_replies() -> None:
 def test_reactions() -> None:
     user = get_user()
     post = Post.get({})
-    response = client.post(f"/api/v1/posts/{post.id}/reactions", headers=get_header())
-    assert response.status_code == status.HTTP_200_OK
-    assert Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is True
+    response = client.post(f"/api/v1/posts/{post.slug}/reactions", headers=get_header())
+    assert response.status_code == status.HTTP_201_CREATED
+    assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is True
 
     # Delete reaction
-    response = client.delete(f"/api/v1/posts/{post.id}/reactions", headers=get_header())
-    assert response.status_code == status.HTTP_200_OK
-    assert (
-        Reaction.exists({"post_id": post.id, "user_ids": {"$in": [user.id]}}) is False
+    response = client.delete(
+        f"/api/v1/posts/{post.slug}/reactions", headers=get_header()
     )
+    assert response.status_code == status.HTTP_200_OK
+    assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is False
 
 
 def test_reactions_auth() -> None:
     post = Post.get({})
-    response = client.post(f"/api/v1/posts/{post.id}/reactions")
+    response = client.post(f"/api/v1/posts/{post.slug}/reactions")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    response = client.delete(f"/api/v1/posts/{post.id}/reactions")
+    response = client.delete(f"/api/v1/posts/{post.slug}/reactions")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

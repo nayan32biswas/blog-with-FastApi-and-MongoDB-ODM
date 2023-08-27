@@ -1,21 +1,32 @@
 import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.base.exceptions import CustomException, ExType
 from app.base.utils import update_partially
+from app.base.utils.query import get_object_or_404
 
-from .dependencies import get_authenticated_user
+from .dependencies import get_authenticated_user, get_authenticated_user_or_none
 from .models import User
-from .schemas import LoginIn, Registration, UpdateAccessTokenIn, UserIn, UserOut
+from .schemas import (
+    ChangePasswordIn,
+    LoginIn,
+    PublicUserProfile,
+    Registration,
+    UpdateAccessTokenIn,
+    UserIn,
+    UserOut,
+)
 from .utils import (
     authenticate_user,
     create_access_token,
     create_access_token_from_refresh_token,
     create_refresh_token,
     get_password_hash,
+    verify_password,
 )
 
 router = APIRouter()
@@ -27,8 +38,11 @@ logger = logging.getLogger(__name__)
 )
 def registration(data: Registration) -> Any:
     if User.exists({"username": data.username}):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists."
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.USERNAME_EXISTS,
+            detail="Username already exists.",
+            field="username",
         )
 
     try:
@@ -42,20 +56,22 @@ def registration(data: Registration) -> Any:
         ).create()
     except Exception as ex:
         logger.warning(f"Raise error while creating user error:{ex}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Something wrong try again."
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.UNHANDLED_ERROR,
+            detail="Something wrong. Try later.",
         )
 
     return UserOut.from_orm(user)
 
 
-def token_response(username: str, password: str):
+def token_response(username: str, password: str) -> Any:
     user = authenticate_user(username, password)
     if not user or user.is_active is False:
-        raise HTTPException(
+        raise CustomException(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            code=ExType.AUTHENTICATION_ERROR,
             detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(
         data={"id": str(user.id), "random_str": str(user.random_str)}
@@ -91,12 +107,30 @@ def update_access_token(
     return {"access_token": access_token}
 
 
+@router.post("/api/v1/change-password")
+def change_password(
+    data: ChangePasswordIn, user: User = Depends(get_authenticated_user)
+) -> Any:
+    if not user.password or not verify_password(data.current_password, user.password):
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.AUTHENTICATION_ERROR,
+            field="current_password",
+            detail="Password did not match",
+        )
+
+    hash_password = get_password_hash(data.new_password)
+
+    user.update(raw={"$set": {"password": hash_password}})
+    return {"message": "Password changed successfully."}
+
+
 @router.get("/api/v1/me", response_model=UserOut)
 def ger_me(user: User = Depends(get_authenticated_user)) -> Any:
     return UserOut.from_orm(user)
 
 
-@router.patch("/api/v1/update-user", response_model=UserOut)
+@router.patch("/api/v1/update-me", response_model=UserOut)
 def update_user(user_data: UserIn, user: User = Depends(get_authenticated_user)) -> Any:
     user = update_partially(user, user_data)
     user.update()
@@ -108,3 +142,12 @@ def logout_from_all_device(user: User = Depends(get_authenticated_user)) -> Any:
     user.random_str = User.new_random_str()
     user.update()
     return {"message": "Logged out."}
+
+
+@router.get("/api/v1/users/{username}", response_model=UserOut)
+def ger_user_public_profile(
+    username: str,
+    _: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Any:
+    public_user = get_object_or_404(User, filter={"username": username})
+    return PublicUserProfile.from_orm(public_user)

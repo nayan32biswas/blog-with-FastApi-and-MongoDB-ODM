@@ -2,7 +2,9 @@ import logging
 import time
 from typing import Any
 
-from fastapi import Request, Response
+from fastapi import Request
+
+from app.base.exceptions import CustomException, ExType
 
 from .config import DEBUG
 
@@ -25,4 +27,9 @@ async def catch_exceptions_middleware(request: Request, call_next: Any) -> Any:
         if DEBUG:
             raise e
         else:
-            return Response("Internal server error", status_code=500)
+            # return Response("Internal server error", status_code=500)
+            raise CustomException(
+                status_code=500,
+                code=ExType.INTERNAL_SERVER_ERROR,
+                detail="Internal server error. Try later.",
+            )

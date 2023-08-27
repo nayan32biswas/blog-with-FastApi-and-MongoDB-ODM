@@ -11,8 +11,8 @@ def create_indexes() -> None:
 
 @app.command()
 def populate_data(
-    total_user: int = typer.Option(10),
-    total_post: int = typer.Option(10),
+    total_user: int = typer.Option(100),
+    total_post: int = typer.Option(100),
 ) -> None:
     from app.tests.data import populate_dummy_data
 

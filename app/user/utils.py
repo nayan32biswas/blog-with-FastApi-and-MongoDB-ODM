@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 import jwt
 from bson import ObjectId
-from fastapi import HTTPException, status
+from fastapi import status
 from passlib.context import CryptContext
 
 from app.base.config import (
@@ -14,6 +14,7 @@ from app.base.config import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     SECRET_KEY,
 )
+from app.base.exceptions import CustomException, ExType
 from app.user.models import User
 
 logger = logging.getLogger(__name__)
@@ -60,8 +61,10 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     return encoded_jwt
 
 
-invalid_refresh_token = HTTPException(
-    status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Refresh Token"
+invalid_refresh_token = CustomException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    code=ExType.PERMISSION_ERROR,
+    detail="Invalid Refresh Token",
 )
 
 

@@ -3,10 +3,11 @@ from typing import Any, Optional
 
 import jwt
 from bson import ObjectId
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
 from fastapi.security import OAuth2PasswordBearer
 
 from app.base.config import ALGORITHM, SECRET_KEY
+from app.base.exceptions import CustomException, ExType
 from app.user.models import User
 
 from .schemas import TokenData
@@ -14,10 +15,10 @@ from .schemas import TokenData
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 oauth2_scheme_or_none = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
-credentials_exception = HTTPException(
+credentials_exception = CustomException(
     status_code=status.HTTP_401_UNAUTHORIZED,
+    code=ExType.AUTHENTICATION_ERROR,
     detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
 )
 
 TOKEN_PREFIX = "Bearer"
@@ -36,10 +37,10 @@ def _get_token_data(token: str) -> TokenData:
         raise credentials_exception
     token_type = payload.get("token_type")
     if token_type is None or token_type != TokenType.ACCESS:
-        raise HTTPException(
+        raise CustomException(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            code=ExType.AUTHENTICATION_ERROR,
             detail="Invalid Access Token",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     return TokenData(id=id, random_str=random_str)
 
@@ -62,7 +63,11 @@ async def get_authenticated_user(
     if user is None:
         raise credentials_exception
     if user.is_active is False:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise CustomException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=ExType.AUTHENTICATION_ERROR,
+            detail="Inactive User",
+        )
     return user
 
 

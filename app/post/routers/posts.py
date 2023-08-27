@@ -4,31 +4,60 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from mongodb_odm import ODMObjectId
+from slugify import slugify
 
-from app.base.custom_types import ObjectIdStr
+from app.base.exceptions import CustomException, ExType
 from app.base.utils import get_offset, update_partially
 from app.base.utils.query import get_object_or_404
+from app.base.utils.string import rand_slug_str
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Post, Tag
+from ..models import Post, Topic
 from ..schemas.posts import (
     PostCreate,
     PostDetailsOut,
     PostListOut,
+    PostOut,
     PostUpdate,
-    TagIn,
-    TagOut,
+    TopicIn,
+    TopicOut,
 )
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-@router.get("/tags", status_code=status.HTTP_200_OK)
-def get_tags(
+def create_topic(topic_name: str, user: User) -> Topic:
+    topic_name = topic_name.lower()
+
+    topic, created = Topic.get_or_create({"name": topic_name})
+    if created:
+        topic.update(raw={"$set": {"user_id": user.id}})
+        topic.user_id = user.id
+    return topic
+
+
+@router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
+def create_topics(
+    topic_data: TopicIn,
+    user: User = Depends(get_authenticated_user),
+) -> Any:
+    topic = create_topic(topic_data.name, user)
+    if not topic:
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.VALIDATION_ERROR,
+            field="topics",
+            detail="Invalid Topic name",
+        )
+    return TopicOut.from_orm(topic)
+
+
+@router.get("/topics", status_code=status.HTTP_200_OK)
+def get_topics(
     page: int = 1,
     limit: int = 20,
     q: Optional[str] = Query(default=None),
@@ -37,77 +66,30 @@ def get_tags(
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {}
     if q:
-        filter["name"] = re.compile(q, re.IGNORECASE)
+        q = q.lower()
+        filter["name"] = {"$regex": re.compile(q)}
 
-    tag_qs = Tag.find(filter=filter, limit=limit, skip=offset)
-    results = [TagOut.from_orm(tag) for tag in tag_qs]
+    topic_qs = Topic.find(filter=filter, limit=limit, skip=offset)
+    results = [TopicOut.from_orm(topic) for topic in topic_qs]
 
-    tag_count = Tag.count_documents(filter=filter)
+    topic_count = Topic.count_documents(filter=filter)
 
-    return {"count": tag_count, "results": results}
-
-
-@router.post("/tags", status_code=status.HTTP_201_CREATED, response_model=TagOut)
-def create_tags(
-    tag_data: TagIn,
-    user: User = Depends(get_authenticated_user),
-) -> Any:
-    name = tag_data.name.lower()
-
-    tag, created = Tag.get_or_create({"name": name})
-    if created:
-        tag.user_id = user.id
-        tag.update()
-
-    return TagOut.from_orm(tag)
-
-
-@router.get("/posts", status_code=status.HTTP_200_OK)
-def get_posts(
-    page: int = 1,
-    limit: int = 20,
-    q: Optional[str] = Query(default=None),
-    tags: List[ObjectIdStr] = Query(default=[]),
-    author_id: Optional[ObjectIdStr] = Query(default=None),
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
-) -> Dict[str, Any]:
-    offset = get_offset(page, limit)
-    filter: Dict[str, Any] = {
-        "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
-    }
-    if author_id:
-        filter["author_id"] = ObjectId(author_id)
-    if tags:
-        filter["tag_ids"] = {"$in": [ODMObjectId(id) for id in tags]}
-    if q:
-        filter["title"] = q
-
-    """
-    posts = []
-    author_ids = []
-    for post in Post.find(filter=filter, limit=limit, skip=offset):
-        author_ids.append(post.author_id)
-        posts.append(post)
-    author_dict = {obj.id: obj for obj in User.find({"_id": {"$in": author_ids}})}
-
-    results = []
-    for post in posts:
-        post.author = author_dict.get(post.author_id)
-        results.append(PostListOut.from_orm(post).dict())
-    """
-
-    post_qs = Post.find(filter=filter, limit=limit, skip=offset)
-    results = [PostListOut.from_orm(post).dict() for post in Post.load_related(post_qs)]
-
-    post_count = Post.count_documents(filter=filter)
-
-    return {"count": post_count, "results": results}
+    return {"count": topic_count, "results": results}
 
 
 def get_short_description(description: Optional[str]) -> str:
     if description:
         return description[:200]
     return ""
+
+
+def get_or_create_post_topics(topics: List[str], user: User) -> List[ODMObjectId]:
+    topic_ids: List[ODMObjectId] = []
+    for topic_name in topics:
+        topic = create_topic(topic_name, user)
+        if topic:
+            topic_ids.append(topic.id)
+    return topic_ids
 
 
 @router.post(
@@ -119,90 +101,188 @@ def create_posts(
     post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
     short_description = post_data.short_description
+
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
 
+    topic_ids = get_or_create_post_topics(post_data.topics, user)
+
+    if post_data.publish_at and post_data.publish_at < datetime.utcnow():
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please choose future date.",
+            code=ExType.VALIDATION_ERROR,
+            field="publish_at",
+        )
+    if post_data.publish_now:
+        post_data.publish_at = datetime.utcnow()
+
     post = Post(
         author_id=user.id,
+        slug=str(ObjectId()),
         title=post_data.title,
         short_description=short_description,
         description=post_data.description,
         cover_image=post_data.cover_image,
         publish_at=post_data.publish_at,
-        tag_ids=[ODMObjectId(id) for id in post_data.tag_ids],
+        topic_ids=topic_ids,
     ).create()
 
-    post.author = user
-    post.tags = [
-        TagOut.from_orm(tag) for tag in Tag.find({"_id": {"$in": post.tag_ids}})
-    ]
+    is_slug_saved = False
+    slug = slugify(post.title)
+    for i in range(1, 10):
+        try:
+            new_slug = f"{slug}-{rand_slug_str(i)}" if i > 1 else slug
+            post.update(raw={"$set": {"slug": new_slug}})
+            post.slug = new_slug
+            is_slug_saved = True
+            break
+        except Exception:
+            pass
+    if is_slug_saved is False:
+        post.delete()
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Title error",
+            code=ExType.VALIDATION_ERROR,
+            field="title",
+        )
 
-    return PostDetailsOut.from_orm(post)
+    return PostOut.from_orm(post).dict()
 
 
-@router.get("/posts/{post_id}", status_code=status.HTTP_200_OK)
-def get_post_details(
-    post_id: ObjectIdStr,
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
-) -> Any:
+@router.get("/posts", status_code=status.HTTP_200_OK)
+def get_posts(
+    page: int = 1,
+    limit: int = 20,
+    q: Optional[str] = Query(default=None),
+    topics: List[str] = Query(default=[]),
+    username: Optional[str] = Query(default=None),
+    user: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Dict[str, Any]:
+    offset = get_offset(page, limit)
     filter: Dict[str, Any] = {
-        "_id": ObjectId(post_id),
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
     }
+    if username:
+        if user and user.username == username:
+            filter["author_id"] = user.id
+            filter.pop("publish_at")
+        else:
+            user = User.get({"username": username})
+            filter["author_id"] = user.id
+    if topics:
+        topic_ids = [
+            ODMObjectId(obj["_id"])
+            for obj in Topic.find_raw({"slug": {"$in": topics}}, projection={"slug": 1})
+        ]
+        filter["topic_ids"] = {"$in": topic_ids}
+    if q:
+        # Inefficient query
+        filter["title"] = {"$regex": re.compile(q, re.IGNORECASE)}
+
+    sort = [("_id", -1)]
+
+    post_qs = Post.find(
+        filter=filter,
+        sort=sort,
+        limit=limit,
+        skip=offset,
+        projection={"description": 0},
+    )
+    results = [PostListOut.from_orm(post).dict() for post in Post.load_related(post_qs)]
+
+    post_count = Post.count_documents(filter=filter)
+
+    return {"count": post_count, "results": results}
+
+
+@router.get("/posts/{slug}", status_code=status.HTTP_200_OK)
+def get_post_details(
+    slug: str,
+    user: Optional[User] = Depends(get_authenticated_user_or_none),
+) -> Any:
+    filter: Dict[str, Any] = {
+        "slug": slug,
+        # "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
+    }
+
     try:
         post = Post.get(filter=filter)
+        if post.publish_at is None or post.publish_at > datetime.utcnow():
+            if user is None or user.id != post.author_id:
+                raise CustomException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    code=ExType.PERMISSION_ERROR,
+                    detail="You don't have permission to get this object.",
+                )
         post.author = User.get({"_id": post.author_id})
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Object not found."
+        raise CustomException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=ExType.OBJECT_NOT_FOUND,
+            detail="Object not found.",
         )
-    post.tags = [
-        TagOut.from_orm(tag) for tag in Tag.find({"_id": {"$in": post.tag_ids}})
+    post.topics = [
+        TopicOut.from_orm(topic)
+        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
-    return PostDetailsOut.from_orm(post)
+    return PostDetailsOut.from_orm(post).dict()
 
 
-@router.patch(
-    "/posts/{post_id}",
-    status_code=status.HTTP_200_OK,
-    response_model=PostDetailsOut,
-)
+@router.patch("/posts/{slug}", status_code=status.HTTP_200_OK)
 def update_posts(
-    post_id: ObjectIdStr,
+    slug: str,
     post_data: PostUpdate,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+    post = get_object_or_404(Post, {"slug": slug})
 
     if post.author_id != user.id:
-        raise HTTPException(
+        raise CustomException(
             status_code=status.HTTP_403_FORBIDDEN,
+            code=ExType.PERMISSION_ERROR,
             detail="You don't have access to update this post.",
         )
+
+    topic_ids = get_or_create_post_topics(post_data.topics, user)
+
+    if post_data.publish_at and post.publish_at != post_data.publish_at:
+        if post_data.publish_at < datetime.utcnow():
+            raise CustomException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please choose future date.",
+                code=ExType.VALIDATION_ERROR,
+                field="publish_at",
+            )
+    if post_data.publish_now:
+        post_data.publish_at = datetime.utcnow()
 
     post = update_partially(post, post_data)
 
     post.short_description = post_data.short_description
     if not post.short_description and post_data.description:
         post.short_description = get_short_description(post_data.description)
+
+    post.topic_ids = topic_ids
     post.update()
 
-    post.author = user
-
-    return PostDetailsOut.from_orm(post)
+    return {"message": "Post Updated"}
 
 
-@router.delete("/posts/{post_id}", status_code=status.HTTP_200_OK)
+@router.delete("/posts/{slug}", status_code=status.HTTP_200_OK)
 def delete_post(
-    post_id: ObjectIdStr,
+    slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"_id": ObjectId(post_id)})
+    post = get_object_or_404(Post, {"slug": slug})
 
     if post.author_id != user.id:
-        raise HTTPException(
+        raise CustomException(
             status_code=status.HTTP_403_FORBIDDEN,
+            code=ExType.PERMISSION_ERROR,
             detail="You don't have access to delete this post.",
         )
+    post.delete()
     return {"message": "Deleted"}

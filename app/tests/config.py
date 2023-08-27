@@ -23,7 +23,7 @@ def init_config() -> Any:
     connect(config.MONGO_URL)
 
     if not User.exists({"username": users[0]["username"]}):
-        populate_dummy_data()
+        populate_dummy_data(total_user=10, total_post=100)
 
     yield None
     # clean_data()
