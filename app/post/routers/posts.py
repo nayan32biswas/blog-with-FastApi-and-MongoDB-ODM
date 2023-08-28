@@ -83,13 +83,13 @@ def get_short_description(description: Optional[str]) -> str:
     return ""
 
 
-def get_or_create_post_topics(topics: List[str], user: User) -> List[ODMObjectId]:
-    topic_ids: List[ODMObjectId] = []
-    for topic_name in topics:
+def get_or_create_post_topics(topics_name: List[str], user: User) -> List[Topic]:
+    topics: List[Topic] = []
+    for topic_name in topics_name:
         topic = create_topic(topic_name, user)
         if topic:
-            topic_ids.append(topic.id)
-    return topic_ids
+            topics.append(topic)
+    return topics
 
 
 @router.post(
@@ -105,7 +105,7 @@ def create_posts(
     if not post_data.short_description:
         short_description = get_short_description(post_data.description)
 
-    topic_ids = get_or_create_post_topics(post_data.topics, user)
+    topics = get_or_create_post_topics(post_data.topics, user)
 
     if post_data.publish_at and post_data.publish_at < datetime.utcnow():
         raise CustomException(
@@ -125,7 +125,7 @@ def create_posts(
         description=post_data.description,
         cover_image=post_data.cover_image,
         publish_at=post_data.publish_at,
-        topic_ids=topic_ids,
+        topic_ids=[topic.id for topic in topics],
     ).create()
 
     is_slug_saved = False
@@ -147,7 +147,7 @@ def create_posts(
             code=ExType.VALIDATION_ERROR,
             field="title",
         )
-
+    post.topics = topics
     return PostOut.from_orm(post).dict()
 
 
@@ -246,8 +246,6 @@ def update_posts(
             detail="You don't have access to update this post.",
         )
 
-    topic_ids = get_or_create_post_topics(post_data.topics, user)
-
     if post_data.publish_at and post.publish_at != post_data.publish_at:
         if post_data.publish_at < datetime.utcnow():
             raise CustomException(
@@ -265,7 +263,9 @@ def update_posts(
     if not post.short_description and post_data.description:
         post.short_description = get_short_description(post_data.description)
 
-    post.topic_ids = topic_ids
+    if post_data.topics:
+        topics = get_or_create_post_topics(post_data.topics, user)
+        post.topic_ids = [topic.id for topic in topics]
     post.update()
 
     return {"message": "Post Updated"}

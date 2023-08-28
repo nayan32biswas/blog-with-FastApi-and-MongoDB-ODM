@@ -16,6 +16,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+@router.get("/", status_code=status.HTTP_201_CREATED)
+async def home_page() -> Any:
+    return {"message": "Server alive"}
+
+
 @router.post("/api/v1/upload-image", status_code=status.HTTP_201_CREATED)
 async def create_upload_image(
     image: UploadFile = File(...),

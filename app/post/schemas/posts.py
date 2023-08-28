@@ -57,6 +57,7 @@ class PostOut(BaseModel):
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None
+    topics: List[TopicOut] = []
 
     class Config:
         orm_mode = True
