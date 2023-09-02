@@ -124,7 +124,7 @@ def create_topics(N: int) -> None:
         return
 
     write_topics = [
-        InsertOne(Topic.to_mongo(Topic(name=value.lower())))
+        InsertOne(Topic.to_mongo(Topic(name=value)))
         for idx, value in enumerate(data_set)
     ]
     if write_topics:

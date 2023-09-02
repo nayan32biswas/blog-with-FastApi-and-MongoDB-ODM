@@ -1,5 +1,4 @@
 import logging
-import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -15,7 +14,7 @@ from app.base.utils.string import rand_slug_str
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Post, Topic
+from ..models import Comment, Post, Reaction, Topic
 from ..schemas.posts import (
     PostCreate,
     PostDetailsOut,
@@ -66,8 +65,7 @@ def get_topics(
     offset = get_offset(page, limit)
     filter: Dict[str, Any] = {}
     if q:
-        q = q.lower()
-        filter["name"] = {"$regex": re.compile(q)}
+        filter["$text"] = {"$search": q}
 
     topic_qs = Topic.find(filter=filter, limit=limit, skip=offset)
     results = [TopicOut.from_orm(topic) for topic in topic_qs]
@@ -178,8 +176,7 @@ def get_posts(
         ]
         filter["topic_ids"] = {"$in": topic_ids}
     if q:
-        # Inefficient query
-        filter["title"] = {"$regex": re.compile(q, re.IGNORECASE)}
+        filter["$text"] = {"$search": q}
 
     sort = [("_id", -1)]
 
@@ -284,5 +281,8 @@ def delete_post(
             code=ExType.PERMISSION_ERROR,
             detail="You don't have access to delete this post.",
         )
+    Comment.delete_many({"post_id": post.id})
+    Reaction.delete_many({"post_id": post.id})
     post.delete()
+
     return {"message": "Deleted"}
