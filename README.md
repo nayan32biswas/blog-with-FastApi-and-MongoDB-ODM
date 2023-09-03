@@ -131,7 +131,7 @@ docker start blog-database-container
 
 #### Get container IP
 
-```
+```bash
 docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' blog-database-container
 ```
 
@@ -149,7 +149,7 @@ docker run -d --name fastapi-blog-container \
 
 #### Restart server
 
-```
+```bash
 docker start fastapi-blog-container
 ```
 
