@@ -170,10 +170,13 @@ docker network create blog-database
 
 ### Run Mongodb service
 
+`mkdir ~/mongo_blog_data` Create volume directory
+
 ```bash
 docker run -d --name blog_db --hostname db \
     --network blog-database -p 27017:27017 --expose 27017 \
     -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password \
+    -v ~/mongo_blog_data:/data/db \
     mongo:6
 ```
 
