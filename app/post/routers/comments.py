@@ -1,12 +1,12 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, status
 from mongodb_odm import ODMObjectId
 
 from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
-from app.base.utils import get_offset
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
@@ -25,16 +25,16 @@ def update_total_comment(post_id: Any, val: int) -> None:
 @router.get("/posts/{slug}/comments")
 def get_comments(
     slug: str,
-    page: int = 1,
     limit: int = 20,
+    after: Optional[ObjectIdStr] = None,
     _: User = Depends(get_authenticated_user_or_none),
 ) -> Any:
-    offset = get_offset(page, limit)
-
     post = get_object_or_404(Post, filter={"slug": slug})
     filter = {"post_id": post.id}
+    if after:
+        filter["_id"] = {"$lt": ObjectId(after)}
 
-    comment_qs = Comment.find(filter, sort=(("_id", -1),), skip=offset, limit=limit)
+    comment_qs = Comment.find(filter, sort=(("_id", -1),), limit=limit)
     # Load related user only
     comments = Comment.load_related(comment_qs, fields=["user"])
 
@@ -44,16 +44,18 @@ def get_comments(
     users_dict = {user.id: user for user in User.find({"_id": {"$in": user_ids}})}
 
     results = []
+    next_cursor = None
     for comment in comments:
+        next_cursor = comment.id
         comment_dict = comment.dict()
         for reply in comment_dict["replies"]:
             # Assign child replies
             reply["user"] = users_dict.get(reply["user_id"])
         results.append(CommentOut(**comment_dict).dict())
 
-    comment_count = Comment.count_documents(filter)
+    next_cursor = ObjectIdStr(next_cursor) if len(results) else None
 
-    return {"count": comment_count, "results": results}
+    return {"after": next_cursor, "results": results}
 
 
 @router.post(
