@@ -30,22 +30,12 @@ router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-def create_topic(topic_name: str, user: User) -> Topic:
-    topic_name = topic_name.lower()
-
-    topic, created = Topic.get_or_create({"name": topic_name})
-    if created:
-        topic.update(raw={"$set": {"user_id": user.id}})
-        topic.user_id = user.id
-    return topic
-
-
 @router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
 def create_topics(
     topic_data: TopicIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    topic = create_topic(topic_data.name, user)
+    topic = Topic.get_or_create(topic_data.name, user)
     if not topic:
         raise CustomException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -78,7 +68,7 @@ def get_topics(
         next_cursor = topic.id
         results.append(TopicOut.from_orm(topic).dict())
 
-    next_cursor = ObjectIdStr(next_cursor) if len(results) else None
+    next_cursor = ObjectIdStr(next_cursor) if len(results) == limit else None
 
     return {"after": next_cursor, "results": results}
 
@@ -92,7 +82,7 @@ def get_short_description(description: Optional[str]) -> str:
 def get_or_create_post_topics(topics_name: List[str], user: User) -> List[Topic]:
     topics: List[Topic] = []
     for topic_name in topics_name:
-        topic = create_topic(topic_name, user)
+        topic = Topic.get_or_create(topic_name, user)
         if topic:
             topics.append(topic)
     return topics
@@ -201,7 +191,7 @@ def get_posts(
         next_cursor = post.id
         results.append(PostListOut.from_orm(post).dict())
 
-    next_cursor = ObjectIdStr(next_cursor) if len(results) else None
+    next_cursor = ObjectIdStr(next_cursor) if len(results) == limit else None
 
     return {"after": next_cursor, "results": results}
 

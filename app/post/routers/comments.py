@@ -53,7 +53,7 @@ def get_comments(
             reply["user"] = users_dict.get(reply["user_id"])
         results.append(CommentOut(**comment_dict).dict())
 
-    next_cursor = ObjectIdStr(next_cursor) if len(results) else None
+    next_cursor = ObjectIdStr(next_cursor) if len(results) == limit else None
 
     return {"after": next_cursor, "results": results}
 
