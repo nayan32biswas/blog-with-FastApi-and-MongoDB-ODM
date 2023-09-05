@@ -2,7 +2,7 @@ import logging
 from typing import Any, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from mongodb_odm import ODMObjectId
 
 from app.base.custom_types import ObjectIdStr
@@ -25,8 +25,8 @@ def update_total_comment(post_id: Any, val: int) -> None:
 @router.get("/posts/{slug}/comments")
 def get_comments(
     slug: str,
-    limit: int = 20,
-    after: Optional[ObjectIdStr] = None,
+    limit: int = Query(default=20, le=100),
+    after: Optional[ObjectIdStr] = Query(default=None),
     _: User = Depends(get_authenticated_user_or_none),
 ) -> Any:
     post = get_object_or_404(Post, filter={"slug": slug})

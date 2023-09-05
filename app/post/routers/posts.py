@@ -58,8 +58,8 @@ def create_topics(
 
 @router.get("/topics", status_code=status.HTTP_200_OK)
 def get_topics(
-    limit: int = 20,
-    after: Optional[ObjectIdStr] = None,
+    limit: int = Query(default=20, le=100),
+    after: Optional[ObjectIdStr] = Query(default=None),
     q: Optional[str] = Query(default=None),
     _: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Any:
@@ -159,8 +159,8 @@ def create_posts(
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
 def get_posts(
-    limit: int = 20,
-    after: Optional[ObjectIdStr] = None,
+    limit: int = Query(default=20, le=100),
+    after: Optional[ObjectIdStr] = Query(default=None),
     q: Optional[str] = Query(default=None),
     topics: List[str] = Query(default=[]),
     username: Optional[str] = Query(default=None),

@@ -5,18 +5,6 @@ from pydantic import BaseModel
 from pydantic.utils import deep_update
 
 
-def calculate_offset(page: int, limit: int) -> int:
-    return (page - 1) * limit
-
-
-def get_offset(page: int, limit: int) -> int:
-    if page < 1:
-        page = 1
-    if not 1 <= limit <= 100:
-        raise ValueError("Invalid pagination limit")
-    return calculate_offset(page, limit)
-
-
 @no_type_check
 def update_partially(target, source: BaseModel, exclude=None) -> Any:
     cls = target.__class__
