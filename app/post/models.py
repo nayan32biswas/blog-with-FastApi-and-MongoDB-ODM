@@ -48,7 +48,7 @@ class Topic(Document):
                 ).create()
             except Exception:
                 pass
-        raise Exception("Unable to create ")
+        raise Exception("Unable to create the Topic")
 
 
 class Post(Document):
