@@ -15,11 +15,14 @@ client = TestClient(app)
 fake = Faker()
 
 
+def get_published_filter():
+    return {"publish_at": {"$ne": None, "$lte": datetime.utcnow()}}
+
+
 def test_get_topics() -> None:
     response = client.get("/api/v1/topics")
     assert response.status_code == status.HTTP_200_OK
 
-    assert "count" in response.json()
     assert "results" in response.json()
 
     response = client.get("/api/v1/topics", params={"q": "abc"})
@@ -40,7 +43,6 @@ def test_get_posts() -> None:
     response = client.get("/api/v1/posts")
     assert response.status_code == status.HTTP_200_OK
 
-    assert "count" in response.json()
     assert "results" in response.json()
 
     # Get posts with valid credentials
@@ -61,7 +63,6 @@ def test_get_user_posts() -> None:
     response = client.get(f"/api/v1/posts?username={user.username}")
     assert response.status_code == status.HTTP_200_OK
 
-    assert "count" in response.json()
     assert "results" in response.json()
 
 
@@ -72,7 +73,6 @@ def test_get_user_own_posts() -> None:
     )
     assert response.status_code == status.HTTP_200_OK
 
-    assert "count" in response.json()
     assert "results" in response.json()
 
 
@@ -94,7 +94,7 @@ def test_create_posts() -> None:
 
 
 def test_get_post_details() -> None:
-    post = Post.get({})
+    post = Post.get(get_published_filter())
     response = client.get(f"/api/v1/posts/{post.slug}")
     assert response.status_code == status.HTTP_200_OK
 
@@ -150,7 +150,7 @@ def test_get_comments() -> None:
 
 def test_create_comment_on_any_post() -> None:
     user = get_user()
-    post = Post.get_random_one({"author_id": user.id})
+    post = Post.get_random_one({"author_id": user.id, **get_published_filter()})
     response = client.post(
         f"/api/v1/posts/{post.slug}/comments",
         json={"description": fake.text()},

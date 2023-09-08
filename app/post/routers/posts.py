@@ -1,5 +1,4 @@
 import logging
-import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -8,14 +7,15 @@ from fastapi import APIRouter, Depends, Query, status
 from mongodb_odm import ODMObjectId
 from slugify import slugify
 
+from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
-from app.base.utils import get_offset, update_partially
+from app.base.utils import update_partially
 from app.base.utils.query import get_object_or_404
 from app.base.utils.string import rand_slug_str
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Post, Topic
+from ..models import Comment, Post, Reaction, Topic
 from ..schemas.posts import (
     PostCreate,
     PostDetailsOut,
@@ -30,22 +30,12 @@ router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
 
 
-def create_topic(topic_name: str, user: User) -> Topic:
-    topic_name = topic_name.lower()
-
-    topic, created = Topic.get_or_create({"name": topic_name})
-    if created:
-        topic.update(raw={"$set": {"user_id": user.id}})
-        topic.user_id = user.id
-    return topic
-
-
 @router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
 def create_topics(
     topic_data: TopicIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    topic = create_topic(topic_data.name, user)
+    topic = Topic.get_or_create(topic_data.name, user)
     if not topic:
         raise CustomException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -58,23 +48,29 @@ def create_topics(
 
 @router.get("/topics", status_code=status.HTTP_200_OK)
 def get_topics(
-    page: int = 1,
-    limit: int = 20,
+    limit: int = Query(default=20, le=100),
+    after: Optional[ObjectIdStr] = Query(default=None),
     q: Optional[str] = Query(default=None),
     _: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Any:
-    offset = get_offset(page, limit)
     filter: Dict[str, Any] = {}
     if q:
-        q = q.lower()
-        filter["name"] = {"$regex": re.compile(q)}
+        filter["$text"] = {"$search": q}
+    if after:
+        filter["_id"] = {"$lt": ObjectId(after)}
 
-    topic_qs = Topic.find(filter=filter, limit=limit, skip=offset)
-    results = [TopicOut.from_orm(topic) for topic in topic_qs]
+    sort = [("_id", -1)]
 
-    topic_count = Topic.count_documents(filter=filter)
+    results = []
+    next_cursor = None
+    topic_qs = Topic.find(filter=filter, sort=sort, limit=limit)
+    for topic in topic_qs:
+        next_cursor = topic.id
+        results.append(TopicOut.from_orm(topic).dict())
 
-    return {"count": topic_count, "results": results}
+    next_cursor = ObjectIdStr(next_cursor) if len(results) == limit else None
+
+    return {"after": next_cursor, "results": results}
 
 
 def get_short_description(description: Optional[str]) -> str:
@@ -86,7 +82,7 @@ def get_short_description(description: Optional[str]) -> str:
 def get_or_create_post_topics(topics_name: List[str], user: User) -> List[Topic]:
     topics: List[Topic] = []
     for topic_name in topics_name:
-        topic = create_topic(topic_name, user)
+        topic = Topic.get_or_create(topic_name, user)
         if topic:
             topics.append(topic)
     return topics
@@ -153,14 +149,13 @@ def create_posts(
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
 def get_posts(
-    page: int = 1,
-    limit: int = 20,
+    limit: int = Query(default=20, le=100),
+    after: Optional[ObjectIdStr] = Query(default=None),
     q: Optional[str] = Query(default=None),
     topics: List[str] = Query(default=[]),
     username: Optional[str] = Query(default=None),
     user: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Dict[str, Any]:
-    offset = get_offset(page, limit)
     filter: Dict[str, Any] = {
         "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
     }
@@ -178,8 +173,9 @@ def get_posts(
         ]
         filter["topic_ids"] = {"$in": topic_ids}
     if q:
-        # Inefficient query
-        filter["title"] = {"$regex": re.compile(q, re.IGNORECASE)}
+        filter["$text"] = {"$search": q}
+    if after:
+        filter["_id"] = {"$lt": ObjectId(after)}
 
     sort = [("_id", -1)]
 
@@ -187,14 +183,17 @@ def get_posts(
         filter=filter,
         sort=sort,
         limit=limit,
-        skip=offset,
         projection={"description": 0},
     )
-    results = [PostListOut.from_orm(post).dict() for post in Post.load_related(post_qs)]
+    results = []
+    next_cursor = None
+    for post in Post.load_related(post_qs):
+        next_cursor = post.id
+        results.append(PostListOut.from_orm(post).dict())
 
-    post_count = Post.count_documents(filter=filter)
+    next_cursor = ObjectIdStr(next_cursor) if len(results) == limit else None
 
-    return {"count": post_count, "results": results}
+    return {"after": next_cursor, "results": results}
 
 
 @router.get("/posts/{slug}", status_code=status.HTTP_200_OK)
@@ -284,5 +283,8 @@ def delete_post(
             code=ExType.PERMISSION_ERROR,
             detail="You don't have access to delete this post.",
         )
+    Comment.delete_many({"post_id": post.id})
+    Reaction.delete_many({"post_id": post.id})
     post.delete()
+
     return {"message": "Deleted"}

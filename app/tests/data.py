@@ -22,6 +22,7 @@ fake = Faker()
 log = logging.getLogger(__name__)
 
 PROCESSORS = max(multiprocessing.cpu_count() - 2, 2)
+WRITE_OPS_LIMIT = 10000
 
 users = [
     {"username": "username_1", "full_name": fake.name(), "password": "password-one"},
@@ -92,8 +93,12 @@ def _create_users(total_user: Any) -> bool:
                 )
             )
         )
+        if len(write_users) >= WRITE_OPS_LIMIT:
+            User.bulk_write(requests=write_users)
+            write_users = []
     if write_users:
         User.bulk_write(requests=write_users)
+        write_users = []
     return True
 
 
@@ -124,7 +129,9 @@ def create_topics(N: int) -> None:
         return
 
     write_topics = [
-        InsertOne(Topic.to_mongo(Topic(name=value.lower())))
+        InsertOne(
+            Topic.to_mongo(Topic(name=value, slug=f"{slugify(value)}-{ObjectId()}"))
+        )
         for idx, value in enumerate(data_set)
     ]
     if write_topics:
@@ -168,6 +175,9 @@ def _create_posts(total_post: Any) -> bool:
                 )
             )
         )
+        if len(write_posts) >= WRITE_OPS_LIMIT:
+            Post.bulk_write(requests=write_posts)
+            write_posts = []
     if write_posts:
         Post.bulk_write(requests=write_posts)
     return True
@@ -203,8 +213,12 @@ def _create_reactions(total_reaction: Any) -> None:
                 )
             )
         )
+        if len(write_reactions) >= WRITE_OPS_LIMIT:
+            Reaction.bulk_write(requests=write_reactions)
+            write_reactions = []
     if write_reactions:
         Reaction.bulk_write(requests=write_reactions)
+        write_reactions = []
 
 
 @timing
@@ -249,6 +263,10 @@ def _create_comments(total_comment: Any) -> None:
                     )
                 )
             )
+        if len(write_comments) >= WRITE_OPS_LIMIT:
+            Comment.bulk_write(requests=write_comments)
+            write_comments = []
+
     if write_comments:
         Comment.bulk_write(requests=write_comments)
 

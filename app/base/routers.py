@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from fastapi.responses import FileResponse
+from mongodb_odm.connection import get_client
 
 from app.base.config import MEDIA_ROOT
 from app.base.exceptions import CustomException, ExType
@@ -18,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 @router.get("/", status_code=status.HTTP_201_CREATED)
 async def home_page() -> Any:
+    try:
+        get_client().admin.command("ping")
+    except Exception as e:
+        logger.critical(f"Mongo Server not available. Error{e}")
+        raise CustomException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ExType.INTERNAL_SERVER_ERROR,
+            detail="Server is not stable",
+        )
     return {"message": "Server alive"}
 
 
