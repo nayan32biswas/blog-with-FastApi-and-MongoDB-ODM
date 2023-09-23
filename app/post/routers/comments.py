@@ -23,7 +23,7 @@ def update_total_comment(post_id: Any, val: int) -> None:
 
 
 @router.get("/posts/{slug}/comments")
-def get_comments(
+async def get_comments(
     slug: str,
     limit: int = Query(default=20, le=100),
     after: Optional[ObjectIdStr] = Query(default=None),
@@ -63,7 +63,7 @@ def get_comments(
     status_code=status.HTTP_201_CREATED,
     response_model=CommentOut,
 )
-def create_comments(
+async def create_comments(
     slug: str,
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
@@ -82,7 +82,7 @@ def create_comments(
 
 
 @router.put("/posts/{slug}/comments/{comment_id}", status_code=status.HTTP_200_OK)
-def update_comments(
+async def update_comments(
     comment_id: ObjectIdStr,
     slug: str,
     comment_data: CommentIn,
@@ -111,7 +111,7 @@ def update_comments(
 
 
 @router.delete("/posts/{slug}/comments/{comment_id}", status_code=status.HTTP_200_OK)
-def delete_comments(
+async def delete_comments(
     slug: str,
     comment_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
@@ -140,7 +140,7 @@ def delete_comments(
     status_code=status.HTTP_201_CREATED,
     response_model=ReplyOut,
 )
-def create_replies(
+async def create_replies(
     slug: str,
     comment_id: ObjectIdStr,
     reply_data: ReplyIn,
@@ -176,7 +176,7 @@ def create_replies(
     "/posts/{slug}/comments/{comment_id}/replies/{reply_id}",
     status_code=status.HTTP_200_OK,
 )
-def update_replies(
+async def update_replies(
     slug: str,
     comment_id: ObjectIdStr,
     reply_id: ObjectIdStr,
@@ -209,7 +209,7 @@ def update_replies(
     "/posts/{slug}/comments/{comment_id}/replies/{reply_id}",
     status_code=status.HTTP_200_OK,
 )
-def delete_replies(
+async def delete_replies(
     slug: str,
     comment_id: ObjectIdStr,
     reply_id: ObjectIdStr,

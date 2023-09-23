@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/topics", status_code=status.HTTP_201_CREATED, response_model=TopicOut)
-def create_topics(
+async def create_topics(
     topic_data: TopicIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
@@ -47,7 +47,7 @@ def create_topics(
 
 
 @router.get("/topics", status_code=status.HTTP_200_OK)
-def get_topics(
+async def get_topics(
     limit: int = Query(default=20, le=100),
     after: Optional[ObjectIdStr] = Query(default=None),
     q: Optional[str] = Query(default=None),
@@ -93,7 +93,7 @@ def get_or_create_post_topics(topics_name: List[str], user: User) -> List[Topic]
     status_code=status.HTTP_201_CREATED,
     response_model=PostDetailsOut,
 )
-def create_posts(
+async def create_posts(
     post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
     short_description = post_data.short_description
@@ -148,7 +148,7 @@ def create_posts(
 
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
-def get_posts(
+async def get_posts(
     limit: int = Query(default=20, le=100),
     after: Optional[ObjectIdStr] = Query(default=None),
     q: Optional[str] = Query(default=None),
@@ -197,7 +197,7 @@ def get_posts(
 
 
 @router.get("/posts/{slug}", status_code=status.HTTP_200_OK)
-def get_post_details(
+async def get_post_details(
     slug: str,
     user: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Any:
@@ -231,7 +231,7 @@ def get_post_details(
 
 
 @router.patch("/posts/{slug}", status_code=status.HTTP_200_OK)
-def update_posts(
+async def update_posts(
     slug: str,
     post_data: PostUpdate,
     user: User = Depends(get_authenticated_user),
@@ -271,7 +271,7 @@ def update_posts(
 
 
 @router.delete("/posts/{slug}", status_code=status.HTTP_200_OK)
-def delete_post(
+async def delete_post(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:

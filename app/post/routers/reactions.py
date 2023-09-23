@@ -19,7 +19,7 @@ def update_total_reaction(post_id: Any, val: int) -> None:
 
 
 @router.post("/posts/{slug}/reactions", status_code=status.HTTP_201_CREATED)
-def create_reactions(
+async def create_reactions(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
@@ -44,7 +44,7 @@ def create_reactions(
 
 
 @router.delete("/posts/{slug}/reactions", status_code=status.HTTP_200_OK)
-def delete_post_reactions(
+async def delete_post_reactions(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
