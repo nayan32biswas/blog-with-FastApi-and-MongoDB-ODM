@@ -119,13 +119,13 @@ Before creating PR make sure you follow those steps:
 
 For the first time run the database with container name **blog-database-container**
 
-```
+```sh
 docker run -d --name blog-database-container -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo
 ```
 
 #### Start Database If Existing
 
-```
+```sh
 docker start blog-database-container
 ```
 
@@ -162,13 +162,13 @@ docker run --rm --env-file .env fastapi-blog-image python -m app.main populate-d
 
 ## Load Test
 
-### Create new Docker network
+### Configure Common Database
 
 ```bash
 docker network create blog-database
 ```
 
-### Run Mongodb service
+#### Run Mongodb service
 
 `mkdir ~/mongo_blog_data` Create volume directory
 
@@ -187,23 +187,29 @@ The connection URL will be
 - `mongodb://root:password@localhost:27017/blog_db?authSource=admin` for mongodb compass.
 - `mongodb://root:password@db:27017/blog_db?authSource=admin` for application instance.
 
+#### Populate database
+
+```bash
+docker build -t nayanbiswas/fastapi_blog:latest -f Dockerfile .
+
+docker run --rm --network blog-database --env-file .env nayanbiswas/fastapi_blog:latest \
+ python -m app.main populate-data --total-user=100000 --total-post=100000
+```
+
 ### Configure and Run Instance
 
 Build the image:
-`docker build -t nayanbiswas/fastapi_blog:loadtest -f Dockerfile.loadtest .`
+`docker build -t nayanbiswas/fastapi_blog_prod:latest -f Dockerfile.prod .`
 
 Run the newly create image with proper tagging
 
 ```bash
 docker run -d --name fastapi_blog_api \
     --network blog-database -p 8000:8000 --env-file .env \
-    nayanbiswas/fastapi_blog:loadtest
+    nayanbiswas/fastapi_blog_prod:latest
 ```
 
 #### Run application script
-
-- `docker exec -it fastapi_blog_api python -m app.main populate-data` Populate data.
-- `docker exec -it fastapi_blog_api ./scripts/test.sh` Run unit-test.
 
 ### Container related command
 
