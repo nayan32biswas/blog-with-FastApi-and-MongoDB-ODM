@@ -13,7 +13,7 @@ from app.base.exception_handler import (
     unicorn_exception_handler,
 )
 from app.base.exceptions import CustomException, UnicornException
-from app.base.middleware import add_process_time_header, catch_exceptions_middleware
+from app.base.middleware import catch_exceptions_middleware
 from app.post import routers as post_routers
 from app.user import routers as user_routers
 
@@ -39,10 +39,6 @@ app.include_router(user_routers.router, tags=["user"])
 # Exception handler
 app.add_exception_handler(UnicornException, unicorn_exception_handler)
 app.add_exception_handler(CustomException, handle_custom_exception)
-
-# Add middleware
-if config.DEBUG is True:
-    app.add_middleware(BaseHTTPMiddleware, dispatch=add_process_time_header)
 
 app.add_middleware(
     CORSMiddleware,
