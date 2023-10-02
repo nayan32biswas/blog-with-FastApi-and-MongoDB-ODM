@@ -17,7 +17,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/", status_code=status.HTTP_201_CREATED)
+@router.get("/")
 async def home_page() -> Any:
     try:
         get_client().admin.command("ping")
