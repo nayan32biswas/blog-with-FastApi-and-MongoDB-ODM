@@ -28,7 +28,8 @@
         "VisualStudioExptTeam.vscodeintellicode",
         "VisualStudioExptTeam.intellicode-api-usage-examples",
         "streetsidesoftware.code-spell-checker",
-        // Other
+        "zhuangtongfa.material-theme",
+        // File Checker
         "mikestead.dotenv",
         "redhat.vscode-yaml",
         "tamasfe.even-better-toml",
