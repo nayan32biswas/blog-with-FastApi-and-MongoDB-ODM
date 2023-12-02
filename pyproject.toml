@@ -18,8 +18,8 @@ python-slugify = "^8.0.1"
 typer = "^0.7.0"
 types-python-slugify = "^8.0.0.3"
 uvicorn = "^0.23.2"
-mongodb-odm = "0.2.5"
-# mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "main" }
+# mongodb-odm = "~0.2.0"
+mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "main" }
 
 [tool.poetry.group.dev.dependencies]
 # Formatter and linters
@@ -48,7 +48,7 @@ context = '${CONTEXT}'
 
 [tool.coverage.report]
 exclude_lines = ['if __name__ == "__main__":']
-# omit = ["tests/*.py"]
+omit = ["tests/*.py"]
 
 [tool.mypy]
 strict = true
@@ -64,7 +64,7 @@ warn_unused_ignores = false
 [tool.ruff]
 line-length = 88
 select = ["E", "W", "F", "I", "C", "B", "UP"]
-ignore = ["B008", "C901", "W191"]
+ignore = ["B008"]
 
 [tool.ruff.per-file-ignores]
 # "__init__.py" = ["F401"]
