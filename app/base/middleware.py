@@ -23,4 +23,4 @@ async def catch_exceptions_middleware(request: Request, call_next: Any) -> Any:
                 status_code=500,
                 code=ExType.INTERNAL_SERVER_ERROR,
                 detail="Internal server error. Try later.",
-            )
+            ) from e

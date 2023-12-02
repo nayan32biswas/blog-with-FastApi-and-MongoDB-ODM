@@ -60,7 +60,7 @@ async def registration(data: Registration) -> Any:
             status_code=status.HTTP_400_BAD_REQUEST,
             code=ExType.UNHANDLED_ERROR,
             detail="Something wrong. Try later.",
-        )
+        ) from ex
 
     return UserOut.from_orm(user)
 

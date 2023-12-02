@@ -73,8 +73,8 @@ def create_access_token_from_refresh_token(refresh_token: str) -> str:
         raise invalid_refresh_token
     try:
         payload: Any = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-    except Exception:
-        raise invalid_refresh_token
+    except Exception as e:
+        raise invalid_refresh_token from e
     token_type = payload.get("token_type")
     if token_type is None or token_type != TokenType.REFRESH:
         raise invalid_refresh_token

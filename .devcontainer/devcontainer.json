@@ -35,9 +35,7 @@
         "esbenp.prettier-vscode",
         // Python
         "ms-python.python",
-        "ms-python.black-formatter",
-        "charliermarsh.ruff",
-        "ms-python.black-formatter"
+        "charliermarsh.ruff"
       ]
     }
   }

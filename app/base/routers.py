@@ -27,7 +27,7 @@ async def home_page() -> Any:
             status_code=status.HTTP_400_BAD_REQUEST,
             code=ExType.INTERNAL_SERVER_ERROR,
             detail="Server is not stable",
-        )
+        ) from e
     return {"message": "Server alive"}
 
 
