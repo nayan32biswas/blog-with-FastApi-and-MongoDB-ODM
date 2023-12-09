@@ -4,6 +4,5 @@ set -e
 set -x
 
 mypy app
-flake8 app
-black app --check
-isort app scripts --check-only
+ruff app scripts
+ruff format app --check

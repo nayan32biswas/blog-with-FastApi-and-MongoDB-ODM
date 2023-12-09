@@ -39,7 +39,7 @@ async def get_comments(
     comments = Comment.load_related(comment_qs, fields=["user"])
 
     user_ids = list(
-        set(replies.user_id for comment in comments for replies in comment.replies)
+        {replies.user_id for comment in comments for replies in comment.replies}
     )
     users_dict = {user.id: user for user in User.find({"_id": {"$in": user_ids}})}
 
@@ -53,9 +53,9 @@ async def get_comments(
             reply["user"] = users_dict.get(reply["user_id"])
         results.append(CommentOut(**comment_dict).dict())
 
-    next_cursor = ObjectIdStr(next_cursor) if len(results) == limit else None
+    next_cursor = next_cursor if len(results) == limit else None
 
-    return {"after": next_cursor, "results": results}
+    return {"after": ObjectIdStr(next_cursor), "results": results}
 
 
 @router.post(

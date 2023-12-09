@@ -50,8 +50,8 @@ async def get_authenticated_token(token: str = Depends(oauth2_scheme)) -> TokenD
         if token is None:
             raise credentials_exception
         return _get_token_data(token)
-    except Exception:
-        raise credentials_exception
+    except Exception as e:
+        raise credentials_exception from e
 
 
 async def get_authenticated_user(
@@ -78,8 +78,8 @@ async def get_authenticated_token_or_none(
         if token is None:
             return None
         return _get_token_data(token)
-    except Exception:
-        raise credentials_exception
+    except Exception as e:
+        raise credentials_exception from e
 
 
 async def get_authenticated_user_or_none(

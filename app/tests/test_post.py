@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 from faker import Faker
 from fastapi import status
@@ -15,7 +15,7 @@ client = TestClient(app)
 fake = Faker()
 
 
-def get_published_filter():
+def get_published_filter() -> Dict[str, Any]:
     return {"publish_at": {"$ne": None, "$lte": datetime.utcnow()}}
 
 
