@@ -88,7 +88,7 @@ def _create_users(total_user: Any) -> bool:
                         full_name=fake.name(),
                         password=hash_passwords[i % len(hash_passwords)],
                         random_str=User.new_random_str(),
-                        joining_date=datetime.utcnow(),
+                        joining_date=datetime.now(),
                     )
                 )
             )
@@ -111,7 +111,7 @@ def create_users(N: int) -> None:
                 full_name=user["full_name"],
                 password=get_password_hash(user["password"]),
                 random_str=User.new_random_str(),
-                joining_date=datetime.utcnow(),
+                joining_date=datetime.now(),
             ).create()
     N -= 2
 
@@ -144,7 +144,7 @@ def get_post() -> Dict[str, Any]:
     description = fake.text(random.randint(1000, 10000))
     return {
         "title": title,
-        "publish_at": datetime.utcnow(),
+        "publish_at": datetime.now(),
         "short_description": description[:200],
         "description": description,
         "cover_image": None,

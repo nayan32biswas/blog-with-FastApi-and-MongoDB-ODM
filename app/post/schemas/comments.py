@@ -17,7 +17,7 @@ class ReplyIn(BaseModel):
 
 class ReplyOut(BaseModel):
     id: ObjectIdStr
-    user: Optional[PublicUserListOut]
+    user: Optional[PublicUserListOut] = None
     description: str
 
     created_at: datetime
@@ -26,13 +26,10 @@ class ReplyOut(BaseModel):
 
 class CommentOut(BaseModel):
     id: ObjectIdStr
-    user: Optional[PublicUserListOut]
+    user: Optional[PublicUserListOut] = None
 
     description: str
     replies: List[ReplyOut] = []
 
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        orm_mode = True

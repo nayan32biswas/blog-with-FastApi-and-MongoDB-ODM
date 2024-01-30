@@ -68,7 +68,7 @@ async def create_topics(
             field="topics",
             detail="Invalid Topic name",
         )
-    return TopicOut.from_orm(topic)
+    return TopicOut(**topic.model_dump())
 
 
 @router.get("/topics", status_code=status.HTTP_200_OK)
@@ -91,7 +91,7 @@ async def get_topics(
     topic_qs = Topic.find(filter=filter, sort=sort, limit=limit)
     for topic in topic_qs:
         next_cursor = topic.id
-        results.append(TopicOut.from_orm(topic).dict())
+        results.append(TopicOut(**topic.model_dump()).model_dump())
 
     next_cursor = next_cursor if len(results) == limit else None
 
@@ -128,7 +128,7 @@ async def create_posts(
 
     topics = get_or_create_post_topics(post_data.topics, user)
 
-    if post_data.publish_at and post_data.publish_at < datetime.utcnow():
+    if post_data.publish_at and post_data.publish_at < datetime.now():
         raise CustomException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please choose future date.",
@@ -136,7 +136,7 @@ async def create_posts(
             field="publish_at",
         )
     if post_data.publish_now:
-        post_data.publish_at = datetime.utcnow()
+        post_data.publish_at = datetime.now()
 
     post = Post(
         author_id=user.id,
@@ -169,7 +169,7 @@ async def create_posts(
             field="title",
         )
     post.topics = topics
-    return PostOut.from_orm(post).dict()
+    return PostOut(**post.model_dump()).model_dump()
 
 
 @router.get("/posts", status_code=status.HTTP_200_OK)
@@ -182,7 +182,7 @@ async def get_posts(
     user: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Dict[str, Any]:
     filter: Dict[str, Any] = {
-        "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
+        "publish_at": {"$ne": None, "$lt": datetime.now()},
     }
     if username:
         if user and user.username == username:
@@ -214,7 +214,7 @@ async def get_posts(
     next_cursor = None
     for post in Post.load_related(post_qs):
         next_cursor = post.id
-        results.append(PostListOut.from_orm(post).dict())
+        results.append(PostListOut(**post.model_dump()).model_dump())
 
     next_cursor = next_cursor if len(results) == limit else None
 
@@ -228,12 +228,12 @@ async def get_post_details(
 ) -> Any:
     filter: Dict[str, Any] = {
         "slug": slug,
-        # "publish_at": {"$ne": None, "$lt": datetime.utcnow()},
+        # "publish_at": {"$ne": None, "$lt": datetime.now()},
     }
 
     try:
         post = Post.get(filter=filter)
-        if post.publish_at is None or post.publish_at > datetime.utcnow():
+        if post.publish_at is None or post.publish_at > datetime.now():
             if user is None or user.id != post.author_id:
                 raise CustomException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -248,11 +248,11 @@ async def get_post_details(
             detail="Object not found.",
         ) from e
     post.topics = [
-        TopicOut.from_orm(topic)
+        TopicOut(**topic.model_dump())
         for topic in Topic.find({"_id": {"$in": post.topic_ids}})
     ]
 
-    return PostDetailsOut.from_orm(post).dict()
+    return PostDetailsOut(**post.model_dump()).model_dump()
 
 
 @router.patch("/posts/{slug}", status_code=status.HTTP_200_OK)
@@ -271,7 +271,7 @@ async def update_posts(
         )
 
     if post_data.publish_at and post.publish_at != post_data.publish_at:
-        if post_data.publish_at < datetime.utcnow():
+        if post_data.publish_at < datetime.now():
             raise CustomException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Please choose future date.",
@@ -279,7 +279,7 @@ async def update_posts(
                 field="publish_at",
             )
     if post_data.publish_now:
-        post_data.publish_at = datetime.utcnow()
+        post_data.publish_at = datetime.now()
 
     post = update_partially(post, post_data)
 

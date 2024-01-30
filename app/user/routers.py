@@ -50,7 +50,7 @@ async def registration(data: Registration) -> Any:
         user = User(
             username=data.username,
             full_name=data.full_name,
-            joining_date=datetime.utcnow(),
+            joining_date=datetime.now(),
             password=hash_password,
             random_str=User.new_random_str(),
         ).create()
@@ -62,7 +62,7 @@ async def registration(data: Registration) -> Any:
             detail="Something wrong. Try later.",
         ) from ex
 
-    return UserOut.from_orm(user)
+    return UserOut(**user.model_dump())
 
 
 def token_response(username: str, password: str) -> Any:
@@ -79,7 +79,7 @@ def token_response(username: str, password: str) -> Any:
     refresh_token = create_refresh_token(
         data={"id": str(user.id), "random_str": str(user.random_str)}
     )
-    user.update(raw={"$set": {"last_login": datetime.utcnow()}})
+    user.update(raw={"$set": {"last_login": datetime.now()}})
     return {
         "token_type": "Bearer",
         "access_token": access_token,
@@ -127,7 +127,7 @@ async def change_password(
 
 @router.get("/api/v1/me", response_model=UserOut)
 async def ger_me(user: User = Depends(get_authenticated_user)) -> Any:
-    return UserOut.from_orm(user)
+    return UserOut(**user.model_dump())
 
 
 @router.patch("/api/v1/update-me", response_model=UserOut)
@@ -136,7 +136,7 @@ async def update_user(
 ) -> Any:
     user = update_partially(user, user_data)
     user.update()
-    return UserOut.from_orm(user)
+    return UserOut(**user.model_dump())
 
 
 @router.put("/api/v1/logout-from-all-device")
@@ -152,4 +152,4 @@ async def ger_user_public_profile(
     _: Optional[User] = Depends(get_authenticated_user_or_none),
 ) -> Any:
     public_user = get_object_or_404(User, filter={"username": username})
-    return PublicUserProfile.from_orm(public_user)
+    return PublicUserProfile(**public_user.model_dump())
