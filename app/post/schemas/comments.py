@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
+from mongodb_odm import ObjectIdStr
 from pydantic import BaseModel
 
-from app.base.custom_types import ObjectIdStr
 from app.user.schemas import PublicUserListOut
 
 

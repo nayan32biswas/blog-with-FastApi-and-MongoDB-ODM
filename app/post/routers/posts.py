@@ -4,10 +4,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
-from mongodb_odm import ODMObjectId
+from mongodb_odm import ObjectIdStr, ODMObjectId
 from slugify import slugify
 
-from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
 from app.base.utils import update_partially
 from app.base.utils.query import get_object_or_404
