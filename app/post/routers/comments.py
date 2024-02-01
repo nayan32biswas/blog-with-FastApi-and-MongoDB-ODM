@@ -106,7 +106,6 @@ async def update_comments(
 
     comment.description = comment_data.description
     comment.update()
-    comment.user = user
 
     return {"message": "Comment Updated"}
 
