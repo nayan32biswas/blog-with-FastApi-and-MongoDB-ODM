@@ -16,7 +16,7 @@ fake = Faker()
 
 
 def get_published_filter() -> Dict[str, Any]:
-    return {"publish_at": {"$ne": None, "$lte": datetime.utcnow()}}
+    return {"publish_at": {"$ne": None, "$lte": datetime.now()}}
 
 
 def test_get_topics() -> None:
@@ -104,7 +104,7 @@ def test_update_post() -> None:
     post = Post.get({"author_id": user.id})
     payload = {
         "title": fake.sentence(),
-        "publish_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+        "publish_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "short_description": None,
         "cover_image": None,
     }

@@ -1,6 +1,10 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
+
+from fastapi import FastAPI
+from mongodb_odm import connect, disconnect
 
 from .config_utils import comma_separated_str_to_list
 
@@ -21,6 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 LOG_LEVEL = "INFO" if DEBUG is True else "INFO"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # type: ignore
+    connect(MONGO_URL)
+    yield
+    disconnect()
+
 
 log_config = {
     "version": 1,

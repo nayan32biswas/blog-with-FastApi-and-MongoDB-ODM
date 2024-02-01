@@ -18,18 +18,7 @@ from app.post import routers as post_routers
 from app.user import routers as user_routers
 
 dictConfig(config.log_config)
-app: Any = FastAPI(debug=config.DEBUG)
-
-
-@app.on_event("startup")  # type: ignore
-async def startup_db_client() -> None:
-    connect(config.MONGO_URL)
-
-
-@app.on_event("shutdown")  # type: ignore
-async def shutdown_db_client() -> None:
-    disconnect()
-
+app: Any = FastAPI(debug=config.DEBUG, lifespan=config.lifespan)
 
 app.include_router(base_routers.router, tags=["base"])
 app.include_router(post_routers.router, tags=["post"])

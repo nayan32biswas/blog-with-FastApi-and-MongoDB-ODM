@@ -3,9 +3,8 @@ from typing import Any, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
-from mongodb_odm import ODMObjectId
+from mongodb_odm import ObjectIdStr, ODMObjectId
 
-from app.base.custom_types import ObjectIdStr
 from app.base.exceptions import CustomException, ExType
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
@@ -23,7 +22,7 @@ def update_total_comment(post_id: Any, val: int) -> None:
 
 
 @router.get("/posts/{slug}/comments")
-async def get_comments(
+def get_comments(
     slug: str,
     limit: int = Query(default=20, le=100),
     after: Optional[ObjectIdStr] = Query(default=None),
@@ -41,17 +40,19 @@ async def get_comments(
     user_ids = list(
         {replies.user_id for comment in comments for replies in comment.replies}
     )
-    users_dict = {user.id: user for user in User.find({"_id": {"$in": user_ids}})}
+    users_dict = {
+        user.id: user.model_dump() for user in User.find({"_id": {"$in": user_ids}})
+    }
 
     results = []
     next_cursor = None
     for comment in comments:
         next_cursor = comment.id
-        comment_dict = comment.dict()
+        comment_dict = comment.model_dump()
         for reply in comment_dict["replies"]:
             # Assign child replies
             reply["user"] = users_dict.get(reply["user_id"])
-        results.append(CommentOut(**comment_dict).dict())
+        results.append(CommentOut(**comment_dict).model_dump())
 
     next_cursor = next_cursor if len(results) == limit else None
 
@@ -78,7 +79,7 @@ async def create_comments(
     update_total_comment(post.id, 1)
 
     comment.user = user
-    return CommentOut.from_orm(comment)
+    return CommentOut(**comment.model_dump()).model_dump()
 
 
 @router.put("/posts/{slug}/comments/{comment_id}", status_code=status.HTTP_200_OK)
@@ -105,7 +106,6 @@ async def update_comments(
 
     comment.description = comment_data.description
     comment.update()
-    comment.user = user
 
     return {"message": "Comment Updated"}
 
@@ -163,10 +163,10 @@ async def create_replies(
 
     reply_dict = EmbeddedReply(
         id=ODMObjectId(), user_id=user.id, description=reply_data.description
-    ).dict()
+    ).model_dump()
     comment.update(raw={"$push": {"replies": reply_dict}})
 
-    reply_dict["user"] = user.dict()
+    reply_dict["user"] = user.model_dump()
     reply_out = ReplyOut(**reply_dict)
 
     return reply_out

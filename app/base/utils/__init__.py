@@ -2,16 +2,17 @@ from datetime import date, datetime
 from typing import Any, no_type_check
 
 from pydantic import BaseModel
-from pydantic.utils import deep_update
+from pydantic.v1.utils import deep_update
 
 
 @no_type_check
 def update_partially(target, source: BaseModel, exclude=None) -> Any:
     cls = target.__class__
-    update_data = source.dict(exclude_unset=True, exclude=exclude)
+    update_data = source.model_dump(exclude_unset=True, exclude=exclude)
     target = cls(
         **deep_update(
-            target.dict(exclude=cls.get_relational_field_info().keys()), update_data
+            target.model_dump(exclude=cls.get_relational_field_info().keys()),
+            update_data,
         )
     )
     return target
