@@ -18,8 +18,8 @@ python-slugify = "^8.0.2"
 typer = "^0.9.0"
 types-python-slugify = "^8.0.2.20240127"
 uvicorn = "^0.27.0.post1"
-# mongodb-odm = "~1.0.0"
-mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "main" }
+mongodb-odm = "^1.0.0"
+# mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "main" }
 
 [tool.poetry.group.dev.dependencies]
 # Formatter and linters
