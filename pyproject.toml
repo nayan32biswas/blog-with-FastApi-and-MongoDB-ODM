@@ -1,54 +1,54 @@
-[tool.poetry]
+# Project metadata
+[project]
 name = "blog-with-FastApi-and-MongoDB-ODM"
 version = "1.0.0"
 description = ""
-authors = ["Nayan Biswas <nayan32biswas@gmail.com>"]
+authors = [{ name = "Nayan Biswas", email = "nayan32biswas@gmail.com" }]
 readme = "README.md"
+requires-python = ">=3.11,<4.0"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-bcrypt = "^4.1.2"
-fastapi = "^0.109.0"
-passlib = "^1.7.4"
-pydantic = "^2.5.3"
-pyjwt = "^2.8.0"
-pymongo = { version = "^4.6.1", extras = ["srv"] }
-python-multipart = "^0.0.6"
-python-slugify = "^8.0.2"
-typer = "^0.9.0"
-types-python-slugify = "^8.0.2.20240127"
-uvicorn = "^0.27.0.post1"
-mongodb-odm = "^1.0.0"
-# mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm.git", rev = "main" }
+# Main dependencies as an array
+dependencies = [
+    "bcrypt>=4.1.2",
+    "fastapi>=0.109.0",
+    "passlib>=1.7.4",
+    "pydantic>=2.5.3",
+    "pyjwt>=2.8.0",
+    "pymongo[srv]>=4.6.1",
+    "python-multipart>=0.0.6",
+    "python-slugify>=8.0.2",
+    "typer>=0.9.0",
+    "types-python-slugify>=8.0.2.20240127",
+    "uvicorn>=0.27.0.post1",
+    "mongodb-odm>=1.0.0",
+    "cryptography>=44.0.2",
+]
 
-[tool.poetry.group.dev.dependencies]
-# Formatter and linters
-mypy = "^1.8.0"
-ruff = "^0.1.14"
-# Test
-coverage = { extras = ["toml"], version = "^7.4.1" }
-pytest = "^8.0.0"
-Faker = "^22.5.1"
-httpx = "^0.26.0"
-# Others
-pre-commit = "^3.6.0"
-types-passlib = "^1.7.7.20240106"
+# Optional dev dependencies
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.8.0",
+    "ruff>=0.1.14",
+    "coverage[toml]>=7.4.1",
+    "pytest>=8.0.0",
+    "Faker>=22.5.1",
+    "httpx>=0.26.0",
+    "pre-commit>=3.6.0",
+    "types-passlib>=1.7.7.20240106",
+]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+# Optional uv-specific configuration
+[tool.uv]
+# constraint = "constraints.txt"
 
-[tool.poetry-version-plugin]
-source = "init"
-
+# Tool configurations
 [tool.coverage.run]
 parallel = true
-# source = ["app"]
 context = '${CONTEXT}'
+omit = ["tests/*.py"]
 
 [tool.coverage.report]
 exclude_lines = ['if __name__ == "__main__":']
-omit = ["tests/*.py"]
 
 [tool.mypy]
 strict = true
@@ -66,12 +66,8 @@ line-length = 88
 select = ["E", "W", "F", "I", "C", "B", "UP"]
 ignore = ["B008"]
 
-[tool.ruff.per-file-ignores]
-# "__init__.py" = ["F401"]
-
 [tool.ruff.isort]
 known-third-party = ["mongodb_odm", "pydantic", "fastapi"]
 
 [tool.ruff.pyupgrade]
-# Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true

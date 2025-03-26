@@ -15,7 +15,7 @@ services:
       dockerfile: ./Dockerfile
     image: nayanbiswas/fastapi_blog:latest
     container_name: fastapi_blog_server
-    command: "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: "uv run --with uvicorn -- uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - 8000:8000
     environment:

@@ -13,18 +13,24 @@ git clone https://github.com/nayan32biswas/blog-with-FastApi-and-MongoDB-ODM.git
 cd blog-with-FastApi-and-MongoDB-ODM
 ```
 
-### [Install Poetry](https://python-poetry.org/docs/#installation){.internal-link target=\_blank}
+### [Install UV](https://docs.astral.sh/uv/getting-started/installation/){.internal-link target=\_blank}
 
-We are using poetry to manage our python package.
+We are using uv to manage our python package.
 
-So we need to install poetry to start project.
+So we need to install uv to start project.
 
 ### Install Dependency
 
 Install all dependency.
 
 ```bash
-poetry install
+uv sync
+```
+
+### Activate venv
+
+```bash
+source .venv/bin/activate
 ```
 
 ### Start Mongodb Server
@@ -48,7 +54,7 @@ export DEBUG=True
 Before start backend server create indexes with:
 
 ```bash
-poetry run python -m app.main create-indexes
+python -m app.main create-indexes
 ```
 
 ### Run Server
@@ -56,7 +62,7 @@ poetry run python -m app.main create-indexes
 Run backend server with `unicorn`.
 
 ```bash
-poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Populate Database
@@ -84,7 +90,7 @@ You will find all the necessary API documentation there.
 
 - Start Mongodb server
 - Export env key
-- `poetry run scripts/test.sh`
+- `scripts/test.sh`
 
 ## Test with Docker
 
@@ -107,9 +113,9 @@ It's better to create an issue first. Or create a discussions.
 Before creating PR make sure you follow those steps:
 
 - Write test on your change.
-- `poetry run scripts/test.sh` Run unittest and make sure everything pass.
-- `poetry run scripts/lint.sh` Run linting script.
-- `poetry run scripts/format.sh` Run format test if any formatting required.
+- `scripts/test.sh` Run unittest and make sure everything pass.
+- `scripts/lint.sh` Run linting script.
+- `scripts/format.sh` Run format test if any formatting required.
 
 ## Build and Run production server
 
