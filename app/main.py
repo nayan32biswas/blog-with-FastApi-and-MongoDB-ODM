@@ -3,8 +3,7 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# from mongodb_odm import connect, disconnect
+from mongodb_odm import connect, disconnect
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.base import config
@@ -44,6 +43,6 @@ if __name__ == "__main__":
     """CLI"""
     from app.cli import app as cli_app
 
-    # connect(config.MONGO_URL)
+    connect(config.MONGO_URL)
     cli_app()
-    # disconnect()
+    disconnect()
