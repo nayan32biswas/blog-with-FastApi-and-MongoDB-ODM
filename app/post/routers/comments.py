@@ -3,9 +3,10 @@ from typing import Any, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
-from mongodb_odm import ObjectIdStr, ODMObjectId
+from mongodb_odm import ODMObjectId
 
 from app.base.exceptions import CustomException, ExType
+from app.base.types import ObjectIdStr
 from app.base.utils.query import get_object_or_404
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
