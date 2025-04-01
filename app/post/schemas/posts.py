@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,60 +16,60 @@ class TopicOut(BaseModel):
 
 class PostCreate(BaseModel):
     title: str = Field(max_length=255)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
+    short_description: str | None = Field(max_length=255)
+    cover_image: str | None = None
 
-    publish_at: Optional[datetime] = None
-    publish_now: Optional[bool] = None
+    publish_at: datetime | None = None
+    publish_now: bool | None = None
 
-    description: Optional[str] = None
-    topics: List[str] = []
+    description: str | None = None
+    topics: list[str] = []
 
 
 class PostUpdate(BaseModel):
-    title: Optional[str] = Field(default=None, max_length=255)
-    short_description: Optional[str] = Field(default=None, max_length=512)
-    cover_image: Optional[str] = None
+    title: str | None = Field(default=None, max_length=255)
+    short_description: str | None = Field(max_length=255)
+    cover_image: str | None = None
 
-    publish_at: Optional[datetime] = None
-    publish_now: Optional[bool] = None
+    publish_at: datetime | None = None
+    publish_now: bool | None = None
 
-    description: Optional[str] = None
-    topics: List[str] = []
+    description: str | None = None
+    topics: list[str] = []
 
 
 class PostOut(BaseModel):
     title: str = Field(max_length=255)
     slug: str = Field(max_length=300)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
+    short_description: str | None = Field(default=None)
+    cover_image: str | None = None
 
-    publish_at: Optional[datetime] = None
-    topics: List[TopicOut] = []
+    publish_at: datetime | None = None
+    topics: list[TopicOut] = []
 
 
 class PostListOut(BaseModel):
-    author: Optional[PublicUserListOut] = None
+    author: PublicUserListOut | None = None
     title: str = Field(max_length=255)
     slug: str = Field(max_length=300)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
+    short_description: str | None = Field(default=None)
+    cover_image: str | None = None
     total_comment: int = Field(default=0)
     total_reaction: int = Field(default=0)
 
-    publish_at: Optional[datetime] = None
+    publish_at: datetime | None = None
 
 
 class PostDetailsOut(BaseModel):
-    author: Optional[PublicUserListOut] = None
+    author: PublicUserListOut | None = None
     slug: str = Field(max_length=300)
     title: str = Field(max_length=255)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
+    short_description: str | None = Field(default=None)
+    cover_image: str | None = None
     total_comment: int = Field(default=0)
     total_reaction: int = Field(default=0)
 
-    publish_at: Optional[datetime] = None
+    publish_at: datetime | None = None
 
-    description: Optional[str] = None
-    topics: List[TopicOut] = []
+    description: str | None = None
+    topics: list[TopicOut] = []

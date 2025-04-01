@@ -1,7 +1,7 @@
 import logging
 import os
-from functools import lru_cache
-from typing import Any, Dict
+from functools import cache
+from typing import Any
 
 import pytest
 from fastapi import status
@@ -31,12 +31,12 @@ def init_config() -> Any:
     disconnect()
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_user() -> User:
     return User.get({"username": users[0]["username"]})
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_token() -> str:
     response = client.post(
         "/token",
@@ -46,8 +46,8 @@ def get_token() -> str:
     return str(response.json()["access_token"])
 
 
-@lru_cache(maxsize=None)
-def get_header() -> Dict[str, Any]:
+@cache
+def get_header() -> dict[str, Any]:
     token = get_token()
     return {
         "Authorization": f"Bearer {token}",

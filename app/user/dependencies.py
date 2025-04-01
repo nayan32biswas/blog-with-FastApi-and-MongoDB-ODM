@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 import jwt
 from bson import ObjectId
@@ -73,7 +73,7 @@ async def get_authenticated_user(
 
 async def get_authenticated_token_or_none(
     token: str = Depends(oauth2_scheme_or_none),
-) -> Optional[TokenData]:
+) -> TokenData | None:
     try:
         if token is None:
             return None
@@ -84,7 +84,7 @@ async def get_authenticated_token_or_none(
 
 async def get_authenticated_user_or_none(
     token_data: TokenData = Depends(get_authenticated_token_or_none),
-) -> Optional[User]:
+) -> User | None:
     if not token_data:
         return None
     user = User.find_one(

@@ -1,7 +1,6 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional, Tuple
 from uuid import uuid4
 
 from fastapi import UploadFile
@@ -13,7 +12,7 @@ from .string import base64, rand_str
 logger = logging.getLogger(__name__)
 
 
-def get_name_and_extension(filename: Optional[str]) -> Tuple[str, str]:
+def get_name_and_extension(filename: str | None) -> tuple[str, str]:
     if filename is None:
         return "", ""
     name_list = filename.split(".")

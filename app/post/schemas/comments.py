@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from mongodb_odm import ObjectIdStr
 from pydantic import BaseModel
@@ -17,7 +16,7 @@ class ReplyIn(BaseModel):
 
 class ReplyOut(BaseModel):
     id: ObjectIdStr
-    user: Optional[PublicUserListOut] = None
+    user: PublicUserListOut | None = None
     description: str
 
     created_at: datetime
@@ -26,10 +25,10 @@ class ReplyOut(BaseModel):
 
 class CommentOut(BaseModel):
     id: ObjectIdStr
-    user: Optional[PublicUserListOut] = None
+    user: PublicUserListOut | None = None
 
     description: str
-    replies: List[ReplyOut] = []
+    replies: list[ReplyOut] = []
 
     created_at: datetime
     updated_at: datetime

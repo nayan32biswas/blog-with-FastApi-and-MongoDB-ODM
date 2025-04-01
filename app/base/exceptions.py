@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from fastapi import HTTPException as FastapiHTTPException
 
@@ -11,10 +10,10 @@ class UnicornException(Exception):
 
 class CustomException(FastapiHTTPException):
     code: str
-    field: Optional[str] = None
+    field: str | None = None
 
     def __init__(
-        self, status_code: int, code: str, detail: str, field: Optional[str] = None
+        self, status_code: int, code: str, detail: str, field: str | None = None
     ):
         self.code = code
         self.field = field

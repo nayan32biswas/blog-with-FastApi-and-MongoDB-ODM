@@ -1,21 +1,26 @@
 FROM python:3.12
 
-ARG YOUR_ENV=dev
-
-ENV YOUR_ENV=${YOUR_ENV} \
-  PYTHONFAULTHANDLER=1 \
+ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
   PYTHONHASHSEED=random \
   PIP_NO_CACHE_DIR=off \
   PIP_DISABLE_PIP_VERSION_CHECK=on \
-  PIP_DEFAULT_TIMEOUT=100
+  PIP_DEFAULT_TIMEOUT=100 \
+  UV_REQUESTS_TIMEOUT=100
 
-RUN pip install "poetry==1.7"
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  && apt clean && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/0.6.10/install.sh | sh && \
+    mv /root/.local/bin/uv /usr/local/bin/uv
 
 WORKDIR /code
 
-COPY pyproject.toml *.lock /code/
-RUN poetry config virtualenvs.create false \
-  &&  poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
+COPY pyproject.toml uv.lock /code/
+RUN uv sync --extra dev --frozen
 
 ADD . /code

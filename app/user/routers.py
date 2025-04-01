@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -149,7 +149,7 @@ async def logout_from_all_device(user: User = Depends(get_authenticated_user)) -
 @router.get("/api/v1/users/{username}", response_model=UserOut)
 async def ger_user_public_profile(
     username: str,
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
+    _: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
     public_user = get_object_or_404(User, filter={"username": username})
     return PublicUserProfile(**public_user.model_dump())

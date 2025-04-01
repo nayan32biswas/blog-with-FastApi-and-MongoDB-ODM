@@ -1,6 +1,6 @@
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime, timedelta
+from typing import Any
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_or_create_topic(
-    topic_name: str, user: Optional[User] = None
-) -> Tuple[Topic, bool]:
+    topic_name: str, user: User | None = None
+) -> tuple[Topic, bool]:
     user_id = user.id if user else None
     try:
         topic = Topic.get({"name": topic_name})
@@ -73,11 +73,11 @@ async def create_topics(
 @router.get("/topics", status_code=status.HTTP_200_OK)
 async def get_topics(
     limit: int = Query(default=20, le=100),
-    after: Optional[ObjectIdStr] = Query(default=None),
-    q: Optional[str] = Query(default=None),
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
+    after: ObjectIdStr | None = Query(default=None),
+    q: str | None = Query(default=None),
+    _: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
-    filter: Dict[str, Any] = {}
+    filter: dict[str, Any] = {}
     if q:
         filter["$text"] = {"$search": q}
     if after:
@@ -97,14 +97,14 @@ async def get_topics(
     return {"after": ObjectIdStr(next_cursor), "results": results}
 
 
-def get_short_description(description: Optional[str]) -> str:
+def get_short_description(description: str | None) -> str:
     if description:
         return description[:200]
     return ""
 
 
-def get_or_create_post_topics(topics_name: List[str], user: User) -> List[Topic]:
-    topics: List[Topic] = []
+def get_or_create_post_topics(topics_name: list[str], user: User) -> list[Topic]:
+    topics: list[Topic] = []
     for topic_name in topics_name:
         topic, _ = get_or_create_topic(topic_name=topic_name, user=user)
         if topic:
@@ -127,7 +127,10 @@ async def create_posts(
 
     topics = get_or_create_post_topics(post_data.topics, user)
 
-    if post_data.publish_at and post_data.publish_at < datetime.now():
+    validation_padding = timedelta(minutes=5)
+    if post_data.publish_at and post_data.publish_at < (
+        datetime.now() - validation_padding
+    ):
         raise CustomException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please choose future date.",
@@ -174,13 +177,13 @@ async def create_posts(
 @router.get("/posts", status_code=status.HTTP_200_OK)
 async def get_posts(
     limit: int = Query(default=20, le=100),
-    after: Optional[ObjectIdStr] = Query(default=None),
-    q: Optional[str] = Query(default=None),
-    topics: List[str] = Query(default=[]),
-    username: Optional[str] = Query(default=None),
-    user: Optional[User] = Depends(get_authenticated_user_or_none),
-) -> Dict[str, Any]:
-    filter: Dict[str, Any] = {
+    after: ObjectIdStr | None = Query(default=None),
+    q: str | None = Query(default=None),
+    topics: list[str] = Query(default=[]),
+    username: str | None = Query(default=None),
+    user: User | None = Depends(get_authenticated_user_or_none),
+) -> dict[str, Any]:
+    filter: dict[str, Any] = {
         "publish_at": {"$ne": None, "$lt": datetime.now()},
     }
     if username:
@@ -223,9 +226,9 @@ async def get_posts(
 @router.get("/posts/{slug}", status_code=status.HTTP_200_OK)
 async def get_post_details(
     slug: str,
-    user: Optional[User] = Depends(get_authenticated_user_or_none),
+    user: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
-    filter: Dict[str, Any] = {
+    filter: dict[str, Any] = {
         "slug": slug,
         # "publish_at": {"$ne": None, "$lt": datetime.now()},
     }
@@ -241,6 +244,7 @@ async def get_post_details(
                 )
         post.author = User.get({"_id": post.author_id})
     except Exception as e:
+        logger.error(f"Error getting post: {e}")
         raise CustomException(
             status_code=status.HTTP_404_NOT_FOUND,
             code=ExType.OBJECT_NOT_FOUND,

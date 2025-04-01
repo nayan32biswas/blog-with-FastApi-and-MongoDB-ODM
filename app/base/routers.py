@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from fastapi.responses import FileResponse
@@ -43,7 +43,7 @@ async def create_upload_image(
 @router.get("/media/{file_path:path}")
 async def get_image(
     file_path: str,
-    _: Optional[User] = Depends(get_authenticated_user_or_none),
+    _: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
     file_path = f"{MEDIA_ROOT}/{file_path}"
 

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from mongodb_odm import (
     ASCENDING,
@@ -16,10 +15,10 @@ from app.user.models import User
 
 
 class Topic(Document):
-    user_id: Optional[ODMObjectId] = None
+    user_id: ODMObjectId | None = None
     name: str = Field(max_length=127)
     slug: str = Field(...)
-    description: Optional[str] = Field(default=None)
+    description: str | None = Field(default=None)
 
     class ODMConfig(Document.ODMConfig):
         indexes = [
@@ -33,20 +32,20 @@ class Post(Document):
 
     title: str = Field(max_length=255)
     slug: str = Field(max_length=300)
-    short_description: Optional[str] = Field(max_length=512, default=None)
-    cover_image: Optional[str] = None
-    description: Optional[str] = None
+    short_description: str | None = Field(max_length=512, default=None)
+    cover_image: str | None = None
+    description: str | None = None
     total_comment: int = Field(default=0)
     total_reaction: int = Field(default=0)
 
-    publish_at: Optional[datetime] = None
+    publish_at: datetime | None = None
 
-    topic_ids: List[ODMObjectId] = []
+    topic_ids: list[ODMObjectId] = []
 
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
-    author: Optional[User] = Relationship(local_field="author_id")
+    author: User | None = Relationship(local_field="author_id")
 
     class ODMConfig(Document.ODMConfig):
         indexes = [
@@ -70,14 +69,14 @@ class Comment(Document):
     user_id: ODMObjectId = Field(...)
     post_id: ODMObjectId = Field(...)
 
-    replies: List[EmbeddedReply] = []
+    replies: list[EmbeddedReply] = []
     description: str = Field(...)
 
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
-    post: Optional[Post] = Relationship(local_field="post_id")
-    user: Optional[User] = Relationship(local_field="user_id")
+    post: Post | None = Relationship(local_field="post_id")
+    user: User | None = Relationship(local_field="user_id")
 
     class ODMConfig(Document.ODMConfig):
         collection_name = "comment"
@@ -88,9 +87,9 @@ class Comment(Document):
 
 class Reaction(Document):
     post_id: ODMObjectId = Field(...)
-    user_ids: List[ODMObjectId] = []
+    user_ids: list[ODMObjectId] = []
 
-    post: Optional[Post] = Relationship(local_field="post_id")
+    post: Post | None = Relationship(local_field="post_id")
 
     class ODMConfig(Document.ODMConfig):
         collection_name = "reaction"
