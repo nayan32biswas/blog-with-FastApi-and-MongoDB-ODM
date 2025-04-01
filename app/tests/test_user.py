@@ -172,9 +172,9 @@ def test_change_password() -> None:
         "/api/v1/token",
         json={"username": NEW_USERNAME, "password": NEW_PASS},
     )
-    assert (
-        response.status_code == status.HTTP_401_UNAUTHORIZED
-    ), "User should get error with new password"
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED, (
+        "User should get error with new password"
+    )
 
     _ = User.delete_many({"username": NEW_USERNAME})
 

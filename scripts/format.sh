@@ -2,5 +2,5 @@
 
 set -x
 
-ruff app scripts --fix
+ruff check app scripts --fix
 ruff format app scripts

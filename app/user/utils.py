@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 import jwt
 from bson import ObjectId
@@ -34,7 +34,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def authenticate_user(username: str, password: str) -> Optional[User]:
+def authenticate_user(username: str, password: str) -> User | None:
     user = User.find_one({"username": username})
     if not user:
         return None
@@ -45,7 +45,7 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     return user
 
 
-def create_access_token(data: Dict[str, Any]) -> str:
+def create_access_token(data: dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "token_type": TokenType.ACCESS})
@@ -53,7 +53,7 @@ def create_access_token(data: Dict[str, Any]) -> str:
     return encoded_jwt
 
 
-def create_refresh_token(data: Dict[str, Any]) -> str:
+def create_refresh_token(data: dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "token_type": TokenType.REFRESH})

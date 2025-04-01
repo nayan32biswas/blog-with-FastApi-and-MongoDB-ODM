@@ -4,7 +4,7 @@ import random
 import string
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from uuid import uuid4
 
 from bson import ObjectId
@@ -37,7 +37,7 @@ def rand_str(N: int = 12) -> str:
     )
 
 
-def get_range(N: int) -> List[int]:
+def get_range(N: int) -> list[int]:
     block_size = N // PROCESSORS
     val = [block_size for _ in range(PROCESSORS)]
 
@@ -47,7 +47,7 @@ def get_range(N: int) -> List[int]:
     return val
 
 
-def get_random_range(total: int, min_item: int, max_item: int) -> Tuple[int, int]:
+def get_random_range(total: int, min_item: int, max_item: int) -> tuple[int, int]:
     total -= 1
     lo = random.randint(0, total)
     hi = min(lo + random.randint(min_item, max_item), total)
@@ -59,17 +59,17 @@ def get_hash_password(_: Any) -> str:
 
 
 @lru_cache
-def get_user_ids() -> List[Any]:
+def get_user_ids() -> list[Any]:
     return [user["_id"] for user in User.find_raw(projection={"_id": 1})]
 
 
 @lru_cache
-def get_topic_ids() -> List[Any]:
+def get_topic_ids() -> list[Any]:
     return [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
 
 
 @lru_cache
-def get_post_ids() -> List[Any]:
+def get_post_ids() -> list[Any]:
     return [post["_id"] for post in Post.find_raw(projection={"_id": 1})]
 
 
@@ -139,7 +139,7 @@ def create_topics(N: int) -> None:
     log.info(f"{len(data_set)} topic created")
 
 
-def get_post() -> Dict[str, Any]:
+def get_post() -> dict[str, Any]:
     title = fake.sentence()
     description_str = fake.text(random.randint(1000, 10000))
     description_obj = [

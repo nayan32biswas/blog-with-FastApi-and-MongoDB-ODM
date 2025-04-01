@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from faker import Faker
 from fastapi import status
@@ -15,7 +15,7 @@ client = TestClient(app)
 fake = Faker()
 
 
-def get_published_filter() -> Dict[str, Any]:
+def get_published_filter() -> dict[str, Any]:
     return {"publish_at": {"$ne": None, "$lte": datetime.now()}}
 
 
@@ -230,7 +230,7 @@ def test_create_replies() -> None:
     assert response.status_code == status.HTTP_201_CREATED
 
 
-def get_my_reply(user: User) -> Tuple[Comment, EmbeddedReply]:
+def get_my_reply(user: User) -> tuple[Comment, EmbeddedReply]:
     comment = Comment.get({"replies.user_id": user.id})
     reply: EmbeddedReply
     for reply in comment.replies:
@@ -240,7 +240,7 @@ def get_my_reply(user: User) -> Tuple[Comment, EmbeddedReply]:
     raise Exception("Reply not found")
 
 
-def get_others_reply(user: User) -> Tuple[Comment, EmbeddedReply]:
+def get_others_reply(user: User) -> tuple[Comment, EmbeddedReply]:
     comment = Comment.get({"replies.user_id": {"$ne": user.id}})
     reply: EmbeddedReply
     for reply in comment.replies:

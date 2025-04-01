@@ -1,9 +1,9 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
-from mongodb_odm import ODMObjectId, ObjectIdStr
+from mongodb_odm import ObjectIdStr, ODMObjectId
 
 from app.base.exceptions import CustomException, ExType
 from app.base.utils.query import get_object_or_404
@@ -25,7 +25,7 @@ def update_total_comment(post_id: Any, val: int) -> None:
 def get_comments(
     slug: str,
     limit: int = Query(default=20, le=100),
-    after: Optional[ObjectIdStr] = Query(default=None),
+    after: ObjectIdStr | None = Query(default=None),
     _: User = Depends(get_authenticated_user_or_none),
 ) -> Any:
     post = get_object_or_404(Post, filter={"slug": slug})

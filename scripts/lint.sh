@@ -4,5 +4,5 @@ set -e
 set -x
 
 mypy app
-ruff app scripts
+ruff check app scripts
 ruff format app --check

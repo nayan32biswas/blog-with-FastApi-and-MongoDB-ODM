@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -29,14 +27,14 @@ class ChangePasswordIn(BaseModel):
 
 
 class UserIn(BaseModel):
-    full_name: Optional[str] = Field(default=None)
-    image: Optional[str] = Field(default=None)
+    full_name: str | None = Field(default=None)
+    image: str | None = Field(default=None)
 
 
 class UserOut(BaseModel):
     username: str = Field(...)
     full_name: str = Field(...)
-    image: Optional[str] = Field(default=None)
+    image: str | None = Field(default=None)
 
     is_active: bool = True
 
@@ -44,10 +42,10 @@ class UserOut(BaseModel):
 class PublicUserListOut(BaseModel):
     username: str = Field(...)
     full_name: str = Field(...)
-    image: Optional[str] = Field(default=None)
+    image: str | None = Field(default=None)
 
 
 class PublicUserProfile(BaseModel):
     username: str = Field(...)
     full_name: str = Field(...)
-    image: Optional[str] = Field(default=None)
+    image: str | None = Field(default=None)
