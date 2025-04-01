@@ -1,14 +1,13 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
-from mongodb_odm import ODMObjectId
+from mongodb_odm import ODMObjectId, ObjectIdStr
 from slugify import slugify
 
 from app.base.exceptions import CustomException, ExType
-from app.base.types import ObjectIdStr
 from app.base.utils import update_partially
 from app.base.utils.query import get_object_or_404
 from app.base.utils.string import rand_slug_str
@@ -128,7 +127,10 @@ async def create_posts(
 
     topics = get_or_create_post_topics(post_data.topics, user)
 
-    if post_data.publish_at and post_data.publish_at < datetime.now():
+    validation_padding = timedelta(minutes=5)
+    if post_data.publish_at and post_data.publish_at < (
+        datetime.now() - validation_padding
+    ):
         raise CustomException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please choose future date.",
@@ -234,6 +236,8 @@ async def get_post_details(
     try:
         post = Post.get(filter=filter)
         if post.publish_at is None or post.publish_at > datetime.now():
+            print(user, post)
+            print(user.id != post.author_id)
             if user is None or user.id != post.author_id:
                 raise CustomException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -242,6 +246,7 @@ async def get_post_details(
                 )
         post.author = User.get({"_id": post.author_id})
     except Exception as e:
+        logger.error(f"Error getting post: {e}")
         raise CustomException(
             status_code=status.HTTP_404_NOT_FOUND,
             code=ExType.OBJECT_NOT_FOUND,

@@ -119,7 +119,7 @@ requires-dist = [
     { name = "faker", marker = "extra == 'dev'", specifier = ">=22.5.1" },
     { name = "fastapi", specifier = ">=0.109.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.26.0" },
-    { name = "mongodb-odm", specifier = ">=1.0.0" },
+    { name = "mongodb-odm", git = "https://github.com/nayan32biswas/mongodb-odm?rev=main" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "passlib", specifier = ">=1.7.4" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
@@ -455,15 +455,11 @@ wheels = [
 
 [[package]]
 name = "mongodb-odm"
-version = "1.0.2"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.0"
+source = { git = "https://github.com/nayan32biswas/mongodb-odm?rev=main#d396f618146256238ecddbae49cbab77f69f6079" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/05/8f/6fe6fe8f96b9a4e7b60405f0752e930a15232ae5fb9f09fe929efc19aac4/mongodb_odm-1.0.2.tar.gz", hash = "sha256:0a2b0ef8c213693cdb444dcbf67dcf24ce8d25203ec6dc424a5e4618fb8fe0b3", size = 17551 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/69/33/0da769eb015b685e06d8113e70ef0a379972711733ea2ea2152e53048f93/mongodb_odm-1.0.2-py3-none-any.whl", hash = "sha256:d1c06030a3d785338ede27adde494d8d7fc157ca0482e83e080546ae34e01bd4", size = 19421 },
 ]
 
 [[package]]

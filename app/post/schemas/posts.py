@@ -17,7 +17,7 @@ class TopicOut(BaseModel):
 
 class PostCreate(BaseModel):
     title: str = Field(max_length=255)
-    short_description: Optional[str] = Field(max_length=512, default=None)
+    short_description: Optional[str] = Field(max_length=255)
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None
@@ -29,7 +29,7 @@ class PostCreate(BaseModel):
 
 class PostUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=255)
-    short_description: Optional[str] = Field(default=None, max_length=512)
+    short_description: Optional[str] = Field(max_length=255)
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None
@@ -42,7 +42,7 @@ class PostUpdate(BaseModel):
 class PostOut(BaseModel):
     title: str = Field(max_length=255)
     slug: str = Field(max_length=300)
-    short_description: Optional[str] = Field(max_length=512, default=None)
+    short_description: Optional[str] = Field(default=None)
     cover_image: Optional[str] = None
 
     publish_at: Optional[datetime] = None
@@ -53,7 +53,7 @@ class PostListOut(BaseModel):
     author: Optional[PublicUserListOut] = None
     title: str = Field(max_length=255)
     slug: str = Field(max_length=300)
-    short_description: Optional[str] = Field(max_length=512, default=None)
+    short_description: Optional[str] = Field(default=None)
     cover_image: Optional[str] = None
     total_comment: int = Field(default=0)
     total_reaction: int = Field(default=0)
@@ -65,7 +65,7 @@ class PostDetailsOut(BaseModel):
     author: Optional[PublicUserListOut] = None
     slug: str = Field(max_length=300)
     title: str = Field(max_length=255)
-    short_description: Optional[str] = Field(max_length=512, default=None)
+    short_description: Optional[str] = Field(default=None)
     cover_image: Optional[str] = None
     total_comment: int = Field(default=0)
     total_reaction: int = Field(default=0)

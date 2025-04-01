@@ -22,4 +22,5 @@ async def handle_custom_exception(
     }
     if exc.field:
         error_obj["field"] = exc.field
-    return JSONResponse(status_code=exc.status_code, content={"errors": [error_obj]})
+
+    return JSONResponse(status_code=exc.status_code, content=error_obj)

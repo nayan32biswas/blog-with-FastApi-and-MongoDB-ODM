@@ -39,6 +39,9 @@ dev = [
 
 # Optional uv-specific configuration
 [tool.uv]
+
+[tool.uv.sources]
+mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm", rev = "main" }
 # constraint = "constraints.txt"
 
 # Tool configurations

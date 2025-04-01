@@ -141,12 +141,15 @@ def create_topics(N: int) -> None:
 
 def get_post() -> Dict[str, Any]:
     title = fake.sentence()
-    description = fake.text(random.randint(1000, 10000))
+    description_str = fake.text(random.randint(1000, 10000))
+    description_obj = [
+        {"type": "paragraph", "children": [{"text": description_str}]},
+    ]
     return {
         "title": title,
         "publish_at": datetime.now(),
-        "short_description": description[:200],
-        "description": description,
+        "short_description": description_str[: random.randint(100, 200)],
+        "description": description_obj,
         "cover_image": None,
     }
 
