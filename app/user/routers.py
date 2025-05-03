@@ -17,7 +17,8 @@ from .schemas import (
     PublicUserProfile,
     Registration,
     UpdateAccessTokenIn,
-    UserIn,
+    UserDetailsIn,
+    UserDetailsOut,
     UserOut,
 )
 from .utils import (
@@ -125,25 +126,33 @@ async def change_password(
     return {"message": "Password changed successfully."}
 
 
-@router.get("/api/v1/me", response_model=UserOut)
-async def ger_me(user: User = Depends(get_authenticated_user)) -> Any:
-    return UserOut(**user.model_dump())
-
-
-@router.patch("/api/v1/update-me", response_model=UserOut)
-async def update_user(
-    user_data: UserIn, user: User = Depends(get_authenticated_user)
-) -> Any:
-    user = update_partially(user, user_data)
-    user.update()
-    return UserOut(**user.model_dump())
-
-
 @router.put("/api/v1/logout-from-all-device")
 async def logout_from_all_device(user: User = Depends(get_authenticated_user)) -> Any:
     user.random_str = User.new_random_str()
     user.update()
     return {"message": "Logged out."}
+
+
+@router.get("/api/v1/users/me", response_model=UserOut)
+async def get_me(user: User = Depends(get_authenticated_user)) -> Any:
+    return UserOut(**user.model_dump())
+
+
+@router.get("/api/v1/users/details", response_model=UserDetailsOut)
+async def get_user_details(
+    user: User = Depends(get_authenticated_user),
+) -> UserDetailsOut:
+    user_details = User.find_one({"_id": user.id})
+    return UserDetailsOut(**user_details.model_dump())
+
+
+@router.patch("/api/v1/users/update", response_model=UserOut)
+async def update_user(
+    user_data: UserDetailsIn, user: User = Depends(get_authenticated_user)
+) -> Any:
+    user = update_partially(user, user_data)
+    user.update()
+    return UserOut(**user.model_dump())
 
 
 @router.get("/api/v1/users/{username}", response_model=UserOut)

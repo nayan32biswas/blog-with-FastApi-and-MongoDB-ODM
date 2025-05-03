@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.user.models import EmbeddedUserLinks
+
 
 class TokenData(BaseModel):
     id: str
@@ -26,17 +28,32 @@ class ChangePasswordIn(BaseModel):
     new_password: str
 
 
-class UserIn(BaseModel):
-    full_name: str | None = Field(default=None)
-    image: str | None = Field(default=None)
-
-
 class UserOut(BaseModel):
     username: str = Field(...)
     full_name: str = Field(...)
     image: str | None = Field(default=None)
 
     is_active: bool = True
+
+
+class UserDetailsIn(BaseModel):
+    full_name: str
+    email: str | None = Field(default=None)
+    image: str | None = Field(default=None)
+    bio: str | None = Field(default=None)
+    address: str | None = Field(default=None)
+    user_links: list[EmbeddedUserLinks] = Field(default_factory=list)
+
+
+class UserDetailsOut(BaseModel):
+    username: str = Field(...)
+    full_name: str = Field(...)
+    email: str | None = Field(default=None)
+    image: str | None = Field(default=None)
+    is_active: bool = True
+    bio: str | None = Field(default=None)
+    address: str | None = Field(default=None)
+    user_links: list[EmbeddedUserLinks] = Field(default_factory=list)
 
 
 class PublicUserListOut(BaseModel):
