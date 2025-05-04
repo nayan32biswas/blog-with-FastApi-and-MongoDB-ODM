@@ -22,6 +22,7 @@ class UserLinkType(StrEnum):
 class EmbeddedUserLinks(BaseModel):
     type: UserLinkType
     link: str
+    is_public: bool = False
 
 
 class User(Document):

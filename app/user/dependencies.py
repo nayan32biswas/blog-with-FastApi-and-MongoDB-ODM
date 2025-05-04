@@ -59,7 +59,7 @@ async def get_authenticated_user(
 ) -> User:
     user = User.find_one(
         {"_id": ObjectId(token_data.id), "random_str": token_data.random_str},
-        projection={"user_links": False, "password": False, "bio": False},
+        projection={"user_links": False, "bio": False},
     )
     if user is None:
         raise credentials_exception

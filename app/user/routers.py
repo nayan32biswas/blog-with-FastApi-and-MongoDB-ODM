@@ -150,9 +150,12 @@ async def get_user_details(
 async def update_user(
     user_data: UserDetailsIn, user: User = Depends(get_authenticated_user)
 ) -> Any:
-    user = update_partially(user, user_data)
-    user.update()
-    return UserOut(**user.model_dump())
+    user_details = User.find_one({"_id": user.id})
+
+    user_details = update_partially(user_details, user_data)
+    user_details.update()
+
+    return UserOut(**user_details.model_dump())
 
 
 @router.get("/api/v1/users/{username}", response_model=UserOut)
