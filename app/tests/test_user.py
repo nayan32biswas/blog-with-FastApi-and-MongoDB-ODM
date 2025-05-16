@@ -77,7 +77,7 @@ def test_update_access_token() -> None:
 
 
 def test_get_me() -> None:
-    response = client.get("/api/v1/me", headers=get_header())
+    response = client.get("/api/v1/users/me", headers=get_header())
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["username"] == users[0]["username"]
 
@@ -85,7 +85,7 @@ def test_get_me() -> None:
 def test_update_user() -> None:
     new_full_name = "New Name"
     response = client.patch(
-        "/api/v1/update-me", json={"full_name": new_full_name}, headers=get_header()
+        "/api/v1/users/update", json={"full_name": new_full_name}, headers=get_header()
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -105,13 +105,13 @@ def test_logout_from_all_device() -> None:
         "Authorization": f"Bearer {access_token}",
     }
 
-    response = client.get("/api/v1/me", headers=headers)
+    response = client.get("/api/v1/users/me", headers=headers)
     assert response.status_code == status.HTTP_200_OK
 
     response = client.put("/api/v1/logout-from-all-device", headers=headers)
     assert response.status_code == status.HTTP_200_OK
 
-    response = client.get("/api/v1/me", headers=headers)
+    response = client.get("/api/v1/users/me", headers=headers)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     response = client.post(
@@ -122,17 +122,17 @@ def test_logout_from_all_device() -> None:
 
 def test_token_validation() -> None:
     # Try to get me without token
-    response = client.get("/api/v1/me")
+    response = client.get("/api/v1/users/me")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     invalid_access_token = create_access_token({})
     invalid_refresh_token = create_refresh_token({})
     response = client.get(
-        "/api/v1/me", headers={"Authorization": f"Bearer {invalid_access_token}"}
+        "/api/v1/users/me", headers={"Authorization": f"Bearer {invalid_access_token}"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     response = client.get(
-        "/api/v1/me", headers={"Authorization": f"Bearer {invalid_refresh_token}"}
+        "/api/v1/users/me", headers={"Authorization": f"Bearer {invalid_refresh_token}"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 

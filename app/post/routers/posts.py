@@ -97,12 +97,6 @@ async def get_topics(
     return {"after": ObjectIdStr(next_cursor), "results": results}
 
 
-def get_short_description(description: str | None) -> str:
-    if description:
-        return description[:200]
-    return ""
-
-
 def get_or_create_post_topics(topics_name: list[str], user: User) -> list[Topic]:
     topics: list[Topic] = []
     for topic_name in topics_name:
@@ -121,9 +115,6 @@ async def create_posts(
     post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
     short_description = post_data.short_description
-
-    if not post_data.short_description:
-        short_description = get_short_description(post_data.description)
 
     topics = get_or_create_post_topics(post_data.topics, user)
 
@@ -287,8 +278,6 @@ async def update_posts(
     post = update_partially(post, post_data)
 
     post.short_description = post_data.short_description
-    if not post.short_description and post_data.description:
-        post.short_description = get_short_description(post_data.description)
 
     if post_data.topics:
         topics = get_or_create_post_topics(post_data.topics, user)

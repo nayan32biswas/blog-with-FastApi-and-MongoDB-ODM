@@ -22,19 +22,19 @@ class PostCreate(BaseModel):
     publish_at: datetime | None = None
     publish_now: bool | None = None
 
-    description: str | None = None
+    description: dict | None = None
     topics: list[str] = []
 
 
 class PostUpdate(BaseModel):
-    title: str | None = Field(default=None, max_length=255)
+    title: str | None = Field(max_length=255)
     short_description: str | None = Field(max_length=255)
     cover_image: str | None = None
 
     publish_at: datetime | None = None
     publish_now: bool | None = None
 
-    description: str | None = None
+    description: dict | None = None
     topics: list[str] = []
 
 
@@ -71,5 +71,5 @@ class PostDetailsOut(BaseModel):
 
     publish_at: datetime | None = None
 
-    description: str | None = None
+    description: dict | None = None
     topics: list[TopicOut] = []

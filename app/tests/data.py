@@ -15,6 +15,7 @@ from slugify import slugify
 
 from app.base.utils.decorator import timing
 from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
+from app.post.utils import get_post_description_from_str
 from app.user.models import User
 from app.user.utils import get_password_hash
 
@@ -142,9 +143,7 @@ def create_topics(N: int) -> None:
 def get_post() -> dict[str, Any]:
     title = fake.sentence()
     description_str = fake.text(random.randint(1000, 10000))
-    description_obj = [
-        {"type": "paragraph", "children": [{"text": description_str}]},
-    ]
+    description_obj = get_post_description_from_str(description_str)
     return {
         "title": title,
         "publish_at": datetime.now(),

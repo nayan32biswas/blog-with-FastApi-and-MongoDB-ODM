@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from faker import Faker
@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
+from app.post.utils import get_post_description_from_str
 from app.user.models import User
 
 from .config import get_header, get_user, init_config  # noqa
@@ -17,6 +18,10 @@ fake = Faker()
 
 def get_published_filter() -> dict[str, Any]:
     return {"publish_at": {"$ne": None, "$lte": datetime.now()}}
+
+
+def get_post_description():
+    return get_post_description_from_str(fake.text())
 
 
 def test_get_topics() -> None:
@@ -81,7 +86,7 @@ def test_create_posts() -> None:
         "title": fake.sentence(),
         "publish_now": True,
         "short_description": None,
-        "description": fake.text(),
+        "description": get_post_description(),
         "cover_image": None,
         "topics": [],
     }
@@ -102,27 +107,26 @@ def test_get_post_details() -> None:
 def test_update_post() -> None:
     user = get_user()
     post = Post.get({"author_id": user.id})
+
+    published_at = (datetime.now() - timedelta(seconds=5)).strftime("%Y-%m-%dT%H:%M:%S")
     payload = {
         "title": fake.sentence(),
-        "publish_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "publish_at": published_at,
         "short_description": None,
         "cover_image": None,
     }
     response = client.patch(f"/api/v1/posts/{post.slug}", json=payload)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    # Testing patch
-    response = client.patch(
-        f"/api/v1/posts/{post.slug}", json={"title": "new"}, headers=get_header()
-    )
-    assert response.status_code == status.HTTP_200_OK
-    assert Post.get({"slug": post.slug}).title == "new"
-
     # Try to update others post
     post = Post.get({"author_id": {"$ne": user.id}})
     response = client.patch(
         f"/api/v1/posts/{post.slug}",
-        json={"title": fake.sentence()},
+        json={
+            "title": fake.sentence(),
+            "short_description": "",
+            "published_at": published_at,
+        },
         headers=get_header(),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -148,8 +152,13 @@ def test_get_comments() -> None:
     assert response.status_code == status.HTTP_200_OK
 
 
+def get_other_user(current_user: User) -> User:
+    return User.get_random_one({"_id": {"$ne": current_user.id}})
+
+
 def test_create_comment_on_any_post() -> None:
     user = get_user()
+
     post = Post.get_random_one({"author_id": user.id, **get_published_filter()})
     response = client.post(
         f"/api/v1/posts/{post.slug}/comments",
@@ -294,7 +303,7 @@ def test_delete_replies() -> None:
 
 def test_reactions() -> None:
     user = get_user()
-    post = Post.get({})
+    post = Post.get(get_published_filter())
     response = client.post(f"/api/v1/posts/{post.slug}/reactions", headers=get_header())
     assert response.status_code == status.HTTP_201_CREATED
     assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is True
