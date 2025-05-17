@@ -20,7 +20,7 @@ def get_published_filter() -> dict[str, Any]:
     return {"publish_at": {"$ne": None, "$lte": datetime.now()}}
 
 
-def get_post_description():
+def get_post_description() -> dict[Any, Any]:
     return get_post_description_from_str(fake.text())
 
 

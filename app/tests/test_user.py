@@ -82,6 +82,14 @@ def test_get_me() -> None:
     assert response.json()["username"] == users[0]["username"]
 
 
+def test_get_user_details() -> None:
+    user = get_user()
+    response = client.get("/api/v1/users/details", headers=get_header())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["username"] == user.username
+
+
 def test_update_user() -> None:
     new_full_name = "New Name"
     response = client.patch(

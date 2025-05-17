@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from mongodb_odm import (
     ASCENDING,
@@ -34,7 +35,7 @@ class Post(Document):
     slug: str = Field(max_length=300)
     short_description: str | None = Field(max_length=512, default=None)
     cover_image: str | None = None
-    description: dict | None = None
+    description: dict[Any, Any] | None = None
     total_comment: int = Field(default=0)
     total_reaction: int = Field(default=0)
 

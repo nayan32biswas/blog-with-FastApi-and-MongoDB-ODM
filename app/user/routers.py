@@ -143,7 +143,7 @@ async def get_user_details(
     user: User = Depends(get_authenticated_user),
 ) -> UserDetailsOut:
     user_details = User.find_one({"_id": user.id})
-    return UserDetailsOut(**user_details.model_dump())
+    return UserDetailsOut(**user_details.model_dump())  # type: ignore
 
 
 @router.patch("/api/v1/users/update", response_model=UserOut)
@@ -153,9 +153,9 @@ async def update_user(
     user_details = User.find_one({"_id": user.id})
 
     user_details = update_partially(user_details, user_data)
-    user_details.update()
+    user_details.update()  # type: ignore
 
-    return UserOut(**user_details.model_dump())
+    return UserOut(**user_details.model_dump())  # type: ignore
 
 
 @router.get("/api/v1/users/{username}", response_model=UserOut)
@@ -164,4 +164,6 @@ async def ger_user_public_profile(
     _: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
     public_user = get_object_or_404(User, filter={"username": username})
-    return PublicUserProfile(**public_user.model_dump())
+    user_dump = public_user.model_dump()
+
+    return PublicUserProfile(**user_dump)

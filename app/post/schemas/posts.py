@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -22,7 +23,7 @@ class PostCreate(BaseModel):
     publish_at: datetime | None = None
     publish_now: bool | None = None
 
-    description: dict | None = None
+    description: dict[Any, Any] | None = None
     topics: list[str] = []
 
 
@@ -34,7 +35,7 @@ class PostUpdate(BaseModel):
     publish_at: datetime | None = None
     publish_now: bool | None = None
 
-    description: dict | None = None
+    description: dict[Any, Any] | None = None
     topics: list[str] = []
 
 
@@ -71,5 +72,5 @@ class PostDetailsOut(BaseModel):
 
     publish_at: datetime | None = None
 
-    description: dict | None = None
+    description: dict[Any, Any] | None = None
     topics: list[TopicOut] = []
