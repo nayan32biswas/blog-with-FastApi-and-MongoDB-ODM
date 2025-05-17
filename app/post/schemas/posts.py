@@ -20,7 +20,6 @@ class PostCreate(BaseModel):
     short_description: str | None = Field(max_length=255)
     cover_image: str | None = None
 
-    publish_at: datetime | None = None
     publish_now: bool | None = None
 
     description: dict[Any, Any] | None = None
@@ -31,10 +30,7 @@ class PostUpdate(BaseModel):
     title: str | None = Field(max_length=255)
     short_description: str | None = Field(max_length=255)
     cover_image: str | None = None
-
-    publish_at: datetime | None = None
     publish_now: bool | None = None
-
     description: dict[Any, Any] | None = None
     topics: list[str] = []
 

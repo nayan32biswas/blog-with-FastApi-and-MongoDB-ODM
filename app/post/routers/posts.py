@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from bson import ObjectId
@@ -118,18 +118,7 @@ async def create_posts(
 
     topics = get_or_create_post_topics(post_data.topics, user)
 
-    validation_padding = timedelta(minutes=5)
-    if post_data.publish_at and post_data.publish_at < (
-        datetime.now() - validation_padding
-    ):
-        raise CustomException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please choose future date.",
-            code=ExType.VALIDATION_ERROR,
-            field="publish_at",
-        )
-    if post_data.publish_now:
-        post_data.publish_at = datetime.now()
+    publish_at = datetime.now() if post_data.publish_now else None
 
     post = Post(
         author_id=user.id,
@@ -138,7 +127,7 @@ async def create_posts(
         short_description=short_description,
         description=post_data.description,
         cover_image=post_data.cover_image,
-        publish_at=post_data.publish_at,
+        publish_at=publish_at,
         topic_ids=[topic.id for topic in topics],
     ).create()
 
@@ -264,20 +253,14 @@ async def update_posts(
             detail="You don't have access to update this post.",
         )
 
-    if post_data.publish_at and post.publish_at != post_data.publish_at:
-        if post_data.publish_at < datetime.now():
-            raise CustomException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Please choose future date.",
-                code=ExType.VALIDATION_ERROR,
-                field="publish_at",
-            )
-    if post_data.publish_now:
-        post_data.publish_at = datetime.now()
-
     post = update_partially(post, post_data)
 
     post.short_description = post_data.short_description
+
+    if post.publish_at is None and post_data.publish_now is True:
+        post.publish_at = datetime.now()
+    if post.publish_at and post_data.publish_now is False:
+        post.publish_at = None
 
     if post_data.topics:
         topics = get_or_create_post_topics(post_data.topics, user)

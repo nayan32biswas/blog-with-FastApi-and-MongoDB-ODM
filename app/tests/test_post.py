@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from faker import Faker
@@ -108,10 +108,9 @@ def test_update_post() -> None:
     user = get_user()
     post = Post.get({"author_id": user.id})
 
-    published_at = (datetime.now() - timedelta(seconds=5)).strftime("%Y-%m-%dT%H:%M:%S")
     payload = {
         "title": fake.sentence(),
-        "publish_at": published_at,
+        "publish_now": True,
         "short_description": None,
         "cover_image": None,
     }
@@ -125,7 +124,7 @@ def test_update_post() -> None:
         json={
             "title": fake.sentence(),
             "short_description": "",
-            "published_at": published_at,
+            "publish_now": True,
         },
         headers=get_header(),
     )
