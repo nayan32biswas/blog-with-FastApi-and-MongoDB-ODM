@@ -1,5 +1,3 @@
-version: "3.8"
-
 # environment
 x-volumes: &env-volume
   ALLOWED_HOSTS: "*"
@@ -13,9 +11,9 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    image: nayanbiswas/fastapi_blog:latest
+    image: fastapi_blog:latest
     container_name: fastapi_blog_server
-    command: "uv run --with uvicorn -- uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - 8000:8000
     environment:

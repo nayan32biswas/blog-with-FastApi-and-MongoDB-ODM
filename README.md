@@ -54,7 +54,7 @@ export DEBUG=True
 Before start backend server create indexes with:
 
 ```bash
-python -m app.main create-indexes
+uv run -m app.main create-indexes
 ```
 
 ### Run Server
@@ -71,14 +71,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 Make sure you have docker installed and active.
 
-- `docker-compose build api` Build docker image.
-- `docker-compose run --rm api python -m app.main create-indexes` Create Indexes
-- `docker-compose up api` Run the server.
+- `docker compose build api` Build docker image.
+- `docker compose run --rm api uv run -m app.main create-indexes` Create Indexes
+- `docker compose up api` Run the server.
 
 ### Populate Database with Docker
 
-- `docker-compose run --rm api python -m app.main populate-data --total-user 100 --total-post 100` Populate database with 100 user and 100 post with others necessary information
-- `docker-compose run --rm api python -m app.main delete-data` Clean database if necessary.
+- `docker compose run --rm api uv run --extra dev -m app.main populate-data --total-user 100 --total-post 100` Populate database with 100 user and 100 post with others necessary information
+- `docker compose run --rm api uv run --extra dev -m app.main delete-data` Clean database if necessary.
 
 ## Visit API Documentation
 
@@ -97,7 +97,7 @@ You will find all the necessary API documentation there.
 Run project unittest with single command:
 
 ```bash
-docker-compose run --rm api ./scripts/test.sh
+docker compose run --rm api ./scripts/test.sh
 ```
 
 ## Contribute
@@ -162,8 +162,8 @@ docker start fastapi-blog-container
 ## Populate Data
 
 ```bash
-docker run --rm --env-file .env fastapi-blog-image python -m app.main delete-data
-docker run --rm --env-file .env fastapi-blog-image python -m app.main populate-data --total-user 10000 --total-post 10000
+docker run --rm --env-file .env fastapi-blog-image uv run --extra dev -m app.main delete-data
+docker run --rm --env-file .env fastapi-blog-image uv run --extra dev -m app.main populate-data --total-user 10000 --total-post 10000
 ```
 
 ## Load Test
@@ -183,7 +183,7 @@ docker run -d --name blog_db --hostname db \
     --network blog-database -p 27017:27017 --expose 27017 \
     -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password \
     -v ~/mongo_blog_data:/data/db \
-    mongo:6
+    mongo:7
 ```
 
 Additional command for the database container
@@ -196,23 +196,23 @@ The connection URL will be
 #### Populate database
 
 ```bash
-docker build -t nayanbiswas/fastapi_blog:latest -f Dockerfile .
+docker build -t fastapi_blog:latest -f Dockerfile .
 
-docker run --rm --network blog-database --env-file .env nayanbiswas/fastapi_blog:latest \
- python -m app.main populate-data --total-user=100000 --total-post=100000
+docker run --rm --network blog-database --env-file .env fastapi_blog:latest \
+ uv run --extra dev -m app.main populate-data --total-user=100000 --total-post=100000
 ```
 
 ### Configure and Run Instance
 
 Build the image:
-`docker build -t nayanbiswas/fastapi_blog_prod:latest -f Dockerfile.prod .`
+`docker build -t fastapi_blog_prod:latest -f Dockerfile.prod .`
 
 Run the newly create image with proper tagging
 
 ```bash
 docker run -d --name fastapi_blog_api \
     --network blog-database -p 8000:8000 --env-file .env \
-    nayanbiswas/fastapi_blog_prod:latest
+    fastapi_blog_prod:latest
 ```
 
 #### Run application script

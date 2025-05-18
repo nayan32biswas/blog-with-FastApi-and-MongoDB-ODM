@@ -1,13 +1,11 @@
-version: "3.8"
-
 services:
   api:
     build:
       context: ./
       dockerfile: ./Dockerfile.prod
-    image: nayanbiswas/fastapi_blog_prod:latest
+    image: fastapi_blog_prod:latest
     container_name: fastapi_blog_prod_server
-    command: "uv run --with gunicorn -- gunicorn -c app/gunicorn_config.py app.main:app"
+    command: "uv run gunicorn -c app/gunicorn_config.py app.main:app"
     ports:
       - 8000:8000
     env_file: .env
@@ -15,11 +13,21 @@ services:
       - db
     networks:
       - blog-backend-tier
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1gb
+      restart_policy:
+          condition: on-failure
+          delay: 3s
+          max_attempts: 5
+          window: 60s
 
   db:
-    image: mongo:6
-    # restart: always
+    image: mongo:7
     container_name: fastapi_blog_prod_db
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
@@ -31,6 +39,11 @@ services:
       - blog-db:/data/db
     networks:
       - blog-backend-tier
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1gb
 
 volumes:
   blog-db:
