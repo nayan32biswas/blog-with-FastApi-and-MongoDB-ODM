@@ -1,57 +1,39 @@
 # Stage 1: Build the application
 FROM python:3.13 AS builder
 
+# Set environment variables for Python and package management
 ENV PYTHONFAULTHANDLER=1 \
-  PYTHONUNBUFFERED=1 \
-  PYTHONHASHSEED=random \
-  PIP_NO_CACHE_DIR=off \
-  PIP_DISABLE_PIP_VERSION_CHECK=on \
-  PIP_DEFAULT_TIMEOUT=100 \
-  UV_REQUESTS_TIMEOUT=100
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
+    UV_REQUESTS_TIMEOUT=100
 
-# Install required build tools and system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    ca-certificates \
-    git \
-    tesseract-ocr \
-    libgl1 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install uv
+# Install uv package manager
 RUN curl -LsSf https://astral.sh/uv/0.6.10/install.sh | sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv
 
-# Copy project files
+# Set working directory and copy dependency files
 WORKDIR /code
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies with uv (excluding dev group)
-RUN uv sync --no-dev --frozen
+# Install dependencies with uv (excluding dev group, non-editable)
+RUN uv sync --no-dev --frozen --no-editable
 
+# Copy the application code
 ADD . /code
 
 # Stage 2: Create the final runtime image
 FROM python:3.13-slim
 
-# Install required system packages for runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev \
-    libssl-dev \
-    libffi-dev \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libmagic1 \
-    file \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
+# Set working directory
 WORKDIR /code
 
-# Copy installed dependencies from builder
+# Copy installed dependencies and application from builder
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /code /code
 
-# CMD uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Run the application with Gunicorn
 CMD uv run gunicorn -c app/gunicorn_config.py app.main:app
