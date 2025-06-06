@@ -55,7 +55,7 @@ def get_random_range(total: int, min_item: int, max_item: int) -> tuple[int, int
     return lo, hi
 
 
-def get_hash_password(_: Any) -> str:
+def get_hash_password(_: Any) -> Any:
     return get_password_hash(fake.password())
 
 

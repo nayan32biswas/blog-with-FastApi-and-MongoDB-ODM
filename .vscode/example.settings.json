@@ -1,0 +1,25 @@
+{
+  "editor.fontSize": 16,
+  "window.zoomLevel": -1,
+  "workbench.tree.indent": 20,
+  "workbench.colorTheme": "One Dark Pro Darker",
+  "editor.rulers": [88, 100, 120],
+  "editor.renderWhitespace": "all",
+  "editor.fontFamily": "'Fira Code'",
+  "editor.fontLigatures": "'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'zero', 'onum'",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[JSON]": {
+    "editor.formatOnSave": false
+  },
+  "[YAML]": {
+    "editor.formatOnSave": false
+  },
+  "[python]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "ruff.interpreter": [".venv/bin/python"]
+}

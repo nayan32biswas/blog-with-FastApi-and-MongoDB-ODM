@@ -13,9 +13,12 @@ services:
       dockerfile: ./Dockerfile
     image: fastapi_blog:latest
     container_name: fastapi_blog_server
-    command: "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: "uv run --extra dev \
+      -m debugpy --listen 0.0.0.0:5678 \
+      -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
     ports:
       - 8000:8000
+      - 5678:5678
     environment:
       <<: *env-volume
     # env_file: .env

@@ -36,6 +36,8 @@ docs/_build/
 
 #VS Code
 .vscode/**
+!example.launch.json
+!example.settings.json
 
 # JetBrains
 .idea
