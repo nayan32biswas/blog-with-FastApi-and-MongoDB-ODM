@@ -2,8 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.main import app
-
-from .config import get_header, get_test_file_path, init_config  # noqa
+from app.tests.utils import get_header, get_test_file_path
 
 client = TestClient(app)
 

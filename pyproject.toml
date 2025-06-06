@@ -51,7 +51,7 @@ mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm", rev = "mai
 [tool.coverage.run]
 parallel = true
 context = '${CONTEXT}'
-omit = ["tests/*.py"]
+omit = ["app/tests/**", "cli/**"]
 
 [tool.coverage.report]
 exclude_lines = ['if __name__ == "__main__":']

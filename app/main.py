@@ -41,7 +41,7 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=catch_exceptions_middleware)
 
 if __name__ == "__main__":
     """CLI"""
-    from app.cli import app as cli_app
+    from cli.main import app as cli_app
 
     connect(config.MONGO_URL)
     cli_app()

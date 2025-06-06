@@ -287,15 +287,21 @@ def create_comments() -> None:
 
 
 @timing
-def populate_dummy_data(total_user: int = 100, total_post: int = 100) -> None:
+def populate_dummy_data(
+    total_user: int = 100, total_post: int = 100, is_unittest: bool = False
+) -> None:
+    log.info("Applying indexes...")
     apply_indexes()
 
     log.info("Inserting data...")
+
     create_users(total_user)
     create_topics(min(max(total_post // 10, 10), 100000))
     create_posts(total_post)
-    create_reactions()
-    create_comments()
+    if not is_unittest:
+        create_reactions()
+        create_comments()
+
     log.info("Data insertion complete")
 
 

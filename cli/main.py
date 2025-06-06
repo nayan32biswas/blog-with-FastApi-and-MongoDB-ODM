@@ -14,13 +14,13 @@ def populate_data(
     total_user: int = typer.Option(100),
     total_post: int = typer.Option(100),
 ) -> None:
-    from app.tests.data import populate_dummy_data
+    from cli.management_command.data_population import populate_dummy_data
 
     populate_dummy_data(total_user=total_user, total_post=total_post)
 
 
 @app.command()
 def delete_data() -> None:
-    from app.tests.data import clean_data
+    from cli.management_command.data_population import clean_data
 
     clean_data()

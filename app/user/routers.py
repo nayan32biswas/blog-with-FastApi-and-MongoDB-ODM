@@ -23,9 +23,9 @@ from .schemas import (
 )
 from .utils import (
     authenticate_user,
-    create_access_token,
     create_access_token_from_refresh_token,
-    create_refresh_token,
+    create_access_token_from_user,
+    create_refresh_token_from_user,
     get_password_hash,
     verify_password,
 )
@@ -74,13 +74,12 @@ def token_response(username: str, password: str) -> Any:
             code=ExType.AUTHENTICATION_ERROR,
             detail="Incorrect username or password",
         )
-    access_token = create_access_token(
-        data={"id": str(user.id), "random_str": str(user.random_str)}
-    )
-    refresh_token = create_refresh_token(
-        data={"id": str(user.id), "random_str": str(user.random_str)}
-    )
+
+    access_token = create_access_token_from_user(user)
+    refresh_token = create_refresh_token_from_user(user)
+
     user.update(raw={"$set": {"last_login": datetime.now()}})
+
     return {
         "token_type": "Bearer",
         "access_token": access_token,

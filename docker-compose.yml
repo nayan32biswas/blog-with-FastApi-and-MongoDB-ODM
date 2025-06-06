@@ -4,6 +4,7 @@ x-volumes: &env-volume
   SECRET_KEY: "uwqr82asfg298ruwh1234uchrbgyu2oriqwnetge5rteriyu2354f3erfewc"
 
   MONGO_URL: "mongodb://root:password@db:27017/blog_db?authSource=admin"
+  TEST_MONGO_URL: "mongodb://root:password@db:27017/test_blog_db?authSource=admin"
   DEBUG: "True"
 
 services:

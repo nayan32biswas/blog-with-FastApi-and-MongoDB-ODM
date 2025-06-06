@@ -19,7 +19,7 @@ WORKDIR /code
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies with uv (excluding dev group, non-editable)
-RUN uv sync --no-dev --frozen --no-editable
+RUN uv sync --no-dev --locked --no-install-project --no-editable
 
 # Copy the application code
 ADD . /code

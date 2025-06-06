@@ -17,6 +17,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
 MONGO_URL = str(os.environ.get("MONGO_URL"))
+TEST_MONGO_URL = str(os.environ.get("TEST_MONGO_URL", MONGO_URL)) or MONGO_URL
 
 ALLOWED_HOSTS = comma_separated_str_to_list(os.environ.get("ALLOWED_HOSTS", "*"))
 SITE_URL = os.environ.get("SITE_URL")

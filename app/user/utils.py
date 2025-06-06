@@ -61,6 +61,18 @@ def create_refresh_token(data: dict[str, Any]) -> str:
     return encoded_jwt
 
 
+def create_access_token_from_user(user: User) -> str:
+    data = {"id": str(user.id), "random_str": str(user.random_str)}
+
+    return create_access_token(data=data)
+
+
+def create_refresh_token_from_user(user: User) -> str:
+    data = {"id": str(user.id), "random_str": str(user.random_str)}
+
+    return create_refresh_token(data=data)
+
+
 invalid_refresh_token = CustomException(
     status_code=status.HTTP_403_FORBIDDEN,
     code=ExType.PERMISSION_ERROR,
