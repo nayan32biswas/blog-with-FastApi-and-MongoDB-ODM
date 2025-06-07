@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: blog-app
+    newName: fastapi_blog_prod
+    newTag: latest
+
+configMapGenerator:
+  - name: blog-app-config
+    envs:
+      - .env.properties
+
+secretGenerator:
+  - name: blog-app-secrets
+    envs:
+      - .env.secrets
+
+generatorOptions:
+  disableNameSuffixHash: true

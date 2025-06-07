@@ -2,6 +2,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI
 from mongodb_odm import connect, disconnect
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI):  # type: ignore
     disconnect()
 
 
-log_config = {
+log_config: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {

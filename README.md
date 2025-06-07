@@ -222,3 +222,5 @@ docker run -d --name fastapi_blog_api \
 - `docker start <name>` stop the service if it's stopped.
 - `docker stop <name>` Stop the service.
 - `docker rm <name>` Remove the service.
+
+## [Run with Kubernetes](./docs/run-with-k8s.md)

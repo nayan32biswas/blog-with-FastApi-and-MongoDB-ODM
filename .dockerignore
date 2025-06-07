@@ -1,8 +1,39 @@
-.venv**
-
+# Common
+.env
 .git
-**/log
-**/media
-**/static
+k8s
 
+# Python
+*.pyc
+**/__pycache__
+
+# Distribution / packaging / files
+.venv/
+.eggs/
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+coverage.xml
+.coverage
+.coverage*
+.cache
+.pytest_cache
+.mypy_cache
+
+# VS Code
 .vscode
+
+# OS
+.DS_Store
+
+# Project files
+log
+media
+static

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-app-deployment
+  labels:
+    app: blog-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog-app
+  template:
+    metadata:
+      labels:
+        app: blog-app
+    spec:
+      containers:
+        - name: blog-app
+          image: fastapi_blog_prod:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2000Mi"

@@ -13,8 +13,9 @@ htmlcov/
 coverage.xml
 
 # Distribution / packaging / files
+.venv
 env*
-.env
+.env*
 env/
 .eggs/
 .Python
