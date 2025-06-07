@@ -9,8 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from app.base.config import ALGORITHM, SECRET_KEY
 from app.base.exceptions import CustomException, ExType
 from app.user.models import User
-
-from .schemas import TokenData
+from app.user.schemas import TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 oauth2_scheme_or_none = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)

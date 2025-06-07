@@ -10,12 +10,7 @@ from app.tests.user.helper import (
     create_new_user,
 )
 from app.user.models import User
-from app.user.utils import (
-    create_access_token,
-    create_access_token_from_user,
-    create_refresh_token,
-    create_refresh_token_from_user,
-)
+from app.user.services.token import TokenService
 
 client = TestClient(app)
 
@@ -70,7 +65,7 @@ def test_duplicate_registration() -> None:
 
 def test_update_access_token() -> None:
     user = create_new_user()
-    refresh_token = create_refresh_token_from_user(user)
+    refresh_token = TokenService.create_refresh_token_from_user(user)
 
     response = client.post(
         Endpoints.UPDATE_ACCESS_TOKEN,
@@ -81,8 +76,8 @@ def test_update_access_token() -> None:
 
 def test_logout_from_all_device() -> None:
     user = create_new_user()
-    access_token = create_access_token_from_user(user)
-    refresh_token = create_refresh_token_from_user(user)
+    access_token = TokenService.create_access_token_from_user(user)
+    refresh_token = TokenService.create_refresh_token_from_user(user)
 
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -108,8 +103,8 @@ def test_token_validation() -> None:
     response = client.get(Endpoints.ME)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    invalid_access_token = create_access_token({})
-    invalid_refresh_token = create_refresh_token({})
+    invalid_access_token = TokenService.create_access_token({})
+    invalid_refresh_token = TokenService.create_refresh_token({})
     response = client.get(
         Endpoints.ME, headers={"Authorization": f"Bearer {invalid_access_token}"}
     )
@@ -122,7 +117,7 @@ def test_token_validation() -> None:
 
 def test_change_password() -> None:
     user = create_new_user()
-    access_token = create_access_token_from_user(user)
+    access_token = TokenService.create_access_token_from_user(user)
 
     headers = {
         "Authorization": f"Bearer {access_token}",

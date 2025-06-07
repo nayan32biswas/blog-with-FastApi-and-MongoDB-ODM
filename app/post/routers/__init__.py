@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from . import comments, posts, reactions
+from app.post.routers import comments, posts, reactions
 
 router = APIRouter()
 

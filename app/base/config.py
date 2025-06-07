@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from mongodb_odm import connect, disconnect
 
-from .config_utils import comma_separated_str_to_list
+from app.base.config_utils import comma_separated_str_to_list
 
 logger = logging.getLogger(__name__)
 

@@ -8,10 +8,9 @@ from mongodb_odm.connection import get_client
 
 from app.base.config import MEDIA_ROOT
 from app.base.exceptions import CustomException, ExType
+from app.base.utils.file import save_file
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
-
-from .utils.file import save_file
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

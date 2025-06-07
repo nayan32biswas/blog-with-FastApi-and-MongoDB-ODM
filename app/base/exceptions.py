@@ -20,6 +20,15 @@ class CustomException(FastapiHTTPException):
         super().__init__(status_code=status_code, detail=detail)
 
 
+class ObjectNotFoundException(CustomException):
+    def __init__(self, detail: str = "Object not found."):
+        super().__init__(
+            status_code=404,
+            code=ExType.OBJECT_NOT_FOUND,
+            detail=detail,
+        )
+
+
 class ExType(str, Enum):
     INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"
     UNHANDLED_ERROR = "UNHANDLED_ERROR"

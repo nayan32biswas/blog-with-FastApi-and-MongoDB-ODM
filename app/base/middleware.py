@@ -3,9 +3,8 @@ from typing import Any
 
 from fastapi import Request
 
+from app.base.config import DEBUG
 from app.base.exceptions import CustomException, ExType
-
-from .config import DEBUG
 
 logger = logging.getLogger(__name__)
 

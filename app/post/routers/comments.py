@@ -1,24 +1,17 @@
 import logging
 from typing import Any
 
-from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, status
-from mongodb_odm import ObjectIdStr, ODMObjectId
+from mongodb_odm import ObjectIdStr
 
-from app.base.exceptions import CustomException, ExType
-from app.base.utils.query import get_object_or_404
+from app.post.schemas.comments import CommentIn, CommentOut, ReplyIn, ReplyOut
+from app.post.services import comment as comment_service
+from app.post.services import post as post_service
 from app.user.dependencies import get_authenticated_user, get_authenticated_user_or_none
 from app.user.models import User
 
-from ..models import Comment, EmbeddedReply, Post
-from ..schemas.comments import CommentIn, CommentOut, ReplyIn, ReplyOut
-
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
-
-
-def update_total_comment(post_id: Any, val: int) -> None:
-    Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_comment": val}})
 
 
 @router.get("/posts/{slug}/comments")
@@ -26,35 +19,13 @@ def get_comments(
     slug: str,
     limit: int = Query(default=20, le=100),
     after: ObjectIdStr | None = Query(default=None),
-    _: User = Depends(get_authenticated_user_or_none),
+    user: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    filter = {"post_id": post.id}
-    if after:
-        filter["_id"] = {"$lt": ObjectId(after)}
+    user_id = user.id if user else None
+    post = post_service.get_post_details_or_404(slug, user_id)
 
-    comment_qs = Comment.find(filter, sort=(("_id", -1),), limit=limit)
-    # Load related user only
-    comments = Comment.load_related(comment_qs, fields=["user"])
-
-    user_ids = list(
-        {replies.user_id for comment in comments for replies in comment.replies}
-    )
-    users_dict = {
-        user.id: user.model_dump() for user in User.find({"_id": {"$in": user_ids}})
-    }
-
-    results = []
-    next_cursor = None
-    for comment in comments:
-        next_cursor = comment.id
-        comment_dict = comment.model_dump()
-        for reply in comment_dict["replies"]:
-            # Assign child replies
-            reply["user"] = users_dict.get(reply["user_id"])
-        results.append(CommentOut(**comment_dict).model_dump())
-
-    next_cursor = next_cursor if len(results) == limit else None
+    comment_qs = comment_service.get_comments(post.id, limit, after)
+    next_cursor, results = comment_service.load_comments_with_details(comment_qs)
 
     return {"after": ObjectIdStr(next_cursor), "results": results}
 
@@ -69,14 +40,9 @@ async def create_comments(
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    comment = Comment(
-        user_id=user.id,
-        post_id=post.id,
-        description=comment_data.description,
-    ).create()
-    # increase total comment for post
-    update_total_comment(post.id, 1)
+    post = post_service.get_post_details_or_404(slug, user.id)
+
+    comment = comment_service.create_comment(post.id, user.id, comment_data.description)
 
     comment.user = user
     return CommentOut(**comment.model_dump()).model_dump()
@@ -89,23 +55,14 @@ async def update_comments(
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    comment = get_object_or_404(
-        Comment,
-        {
-            "_id": ODMObjectId(comment_id),
-            "post_id": post.id,
-        },
-    )
-    if comment.user_id != user.id:
-        raise CustomException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            code=ExType.PERMISSION_ERROR,
-            detail="You don't have access to update this comment.",
-        )
+    post = post_service.get_post_details_or_404(slug, user.id)
 
-    comment.description = comment_data.description
-    comment.update()
+    _ = comment_service.update_comment(
+        comment_id=comment_id,
+        post_id=post.id,
+        user_id=user.id,
+        description=comment_data.description,
+    )
 
     return {"message": "Comment Updated"}
 
@@ -116,21 +73,13 @@ async def delete_comments(
     comment_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    comment = get_object_or_404(
-        Comment,
-        {"_id": ODMObjectId(comment_id), "post_id": post.id},
-    )
-    if comment.user_id != user.id:
-        raise CustomException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            code=ExType.PERMISSION_ERROR,
-            detail="You don't have access to delete this comment.",
-        )
+    post = post_service.get_post_details_or_404(slug, user.id)
 
-    comment.delete()
-    # decrease total comment for post
-    update_total_comment(post.id, -1)
+    comment_service.delete_comment(
+        comment_id=comment_id,
+        post_id=post.id,
+        user_id=user.id,
+    )
 
     return {"message": "Deleted"}
 
@@ -141,30 +90,17 @@ async def delete_comments(
     response_model=ReplyOut,
 )
 async def create_replies(
-    slug: str,
     comment_id: ObjectIdStr,
     reply_data: ReplyIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    comment = get_object_or_404(
-        Comment,
-        {
-            "_id": ODMObjectId(comment_id),
-            "post_id": post.id,
-        },
+    reply = comment_service.create_reply(
+        comment_id=comment_id,
+        user_id=user.id,
+        description=reply_data.description,
     )
-    if len(comment.replies) >= 100:
-        raise CustomException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            code=ExType.VALIDATION_ERROR,
-            detail="Comment should have less then 100 comment.",
-        )
 
-    reply_dict = EmbeddedReply(
-        id=ODMObjectId(), user_id=user.id, description=reply_data.description
-    ).model_dump()
-    comment.update(raw={"$push": {"replies": reply_dict}})
+    reply_dict = reply.model_dump()
 
     reply_dict["user"] = user.model_dump()
     reply_out = ReplyOut(**reply_dict)
@@ -177,31 +113,18 @@ async def create_replies(
     status_code=status.HTTP_200_OK,
 )
 async def update_replies(
-    slug: str,
     comment_id: ObjectIdStr,
     reply_id: ObjectIdStr,
     reply_data: ReplyIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    r_id = ODMObjectId(reply_id)
-    update_comment = Comment.update_one(
-        {
-            "_id": ODMObjectId(comment_id),
-            "post_id": post.id,
-            "replies.id": r_id,
-            "replies.user_id": user.id,
-        },
-        {"$set": {"replies.$[reply].description": reply_data.description}},
-        array_filters=[{"reply.id": r_id}],
+    comment_service.update_reply(
+        comment_id=comment_id,
+        reply_id=reply_id,
+        user_id=user.id,
+        description=reply_data.description,
     )
 
-    if update_comment.modified_count != 1:
-        raise CustomException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            code=ExType.PERMISSION_ERROR,
-            detail="You don't have permission to update this replies",
-        )
     return {"message": "Updated"}
 
 
@@ -210,38 +133,14 @@ async def update_replies(
     status_code=status.HTTP_200_OK,
 )
 async def delete_replies(
-    slug: str,
     comment_id: ObjectIdStr,
     reply_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, filter={"slug": slug})
-    r_id = ODMObjectId(reply_id)
-    update_comment = Comment.update_one(
-        {
-            "_id": ODMObjectId(comment_id),
-            "post_id": post.id,
-            "replies": {
-                "$elemMatch": {
-                    "id": r_id,
-                    "user_id": user.id,
-                }
-            },
-        },
-        {
-            "$pull": {
-                "replies": {
-                    "id": r_id,
-                    "user_id": user.id,
-                },
-            }
-        },
+    comment_service.delete_reply(
+        comment_id=comment_id,
+        reply_id=reply_id,
+        user_id=user.id,
     )
-    if update_comment.modified_count != 1:
-        raise CustomException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            code=ExType.PERMISSION_ERROR,
-            detail="You don't have permission to delete this replies",
-        )
 
     return {"message": "Deleted"}

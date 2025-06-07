@@ -6,8 +6,7 @@ from uuid import uuid4
 from fastapi import UploadFile
 
 from app.base.config import BASE_DIR, MEDIA_ROOT
-
-from .string import base64, rand_str
+from app.base.utils.string import base64, rand_str
 
 logger = logging.getLogger(__name__)
 

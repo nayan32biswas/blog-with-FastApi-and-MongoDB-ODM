@@ -17,7 +17,7 @@ from app.base.utils.decorator import timing
 from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
 from app.post.utils import get_post_description_from_str
 from app.user.models import User
-from app.user.utils import get_password_hash
+from app.user.services.auth import AuthService
 
 fake = Faker()
 log = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ def get_random_range(total: int, min_item: int, max_item: int) -> tuple[int, int
 
 
 def get_hash_password(_: Any) -> Any:
-    return get_password_hash(fake.password())
+    return AuthService.get_password_hash(fake.password())
 
 
 @lru_cache
@@ -110,7 +110,7 @@ def create_users(N: int) -> None:
             User(
                 username=user["username"],
                 full_name=user["full_name"],
-                password=get_password_hash(user["password"]),
+                password=AuthService.get_password_hash(user["password"]),
                 random_str=User.new_random_str(),
                 joining_date=datetime.now(),
             ).create()

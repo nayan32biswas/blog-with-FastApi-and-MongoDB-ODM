@@ -4,11 +4,11 @@ from typing import Any
 from fastapi import APIRouter, Depends, status
 from mongodb_odm import ODMObjectId
 
-from app.base.utils.query import get_object_or_404
+from app.post.models import Post
+from app.post.services import post as post_service
+from app.post.services import reaction as reaction_service
 from app.user.dependencies import get_authenticated_user
 from app.user.models import User
-
-from ..models import Post, Reaction
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger(__name__)
@@ -23,23 +23,15 @@ async def create_reactions(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"slug": slug})
-    update_result = Reaction.update_one(
-        {"post_id": post.id, "$where": "this.user_ids.length < 100"},
-        {"$addToSet": {"user_ids": user.id}},
-        upsert=True,
-    )
-    if update_result.upserted_id is not None:
-        pass
-        # Insert new one
-        # update_result.matched_count and update_result.modified_count should be zero
+    post = post_service.get_post_details_or_404(slug, user.id)
 
-    if update_result.modified_count or update_result.upserted_id is not None:
-        # increase total comment for post
-        update_total_reaction(post.id, 1)
+    is_added = reaction_service.create_reaction(post_id=post.id, user_id=user.id)
+
+    if is_added:
         message = "Reaction Added"
     else:
-        message = "You already have an reaction in this post"
+        message = "You already have a reaction on this post"
+
     return {"message": message}
 
 
@@ -48,13 +40,13 @@ async def delete_post_reactions(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = get_object_or_404(Post, {"slug": slug})
-    update_result = Reaction.update_one(
-        {"post_id": post.id, "user_ids": user.id},
-        {"$pull": {"user_ids": user.id}},
-    )
-    if update_result.modified_count:
-        # decrease total comment for post
-        update_total_reaction(post.id, -1)
+    post = post_service.get_post_details_or_404(slug, user.id)
 
-    return {"message": "Reaction Deleted"}
+    is_deleted = reaction_service.delete_reaction(post_id=post.id, user_id=user.id)
+
+    if not is_deleted:
+        message = "You don't have a reaction on this post"
+    else:
+        message = "Reaction Deleted"
+
+    return {"message": message}

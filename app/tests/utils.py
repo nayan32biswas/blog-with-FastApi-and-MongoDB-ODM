@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.base import config
 from app.main import app
 from app.user.models import User
-from app.user.utils import create_access_token_from_user
+from app.user.services.token import TokenService
 from cli.management_command.data_population import users
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def get_auth_header(access_token: str) -> dict[str, Any]:
 
 
 def get_header_by_user(user: User) -> dict[str, Any]:
-    access_token = create_access_token_from_user(user)
+    access_token = TokenService.create_access_token_from_user(user)
 
     return get_auth_header(access_token)
 

@@ -21,5 +21,6 @@
       "source.organizeImports": "explicit"
     }
   },
-  "ruff.interpreter": [".venv/bin/python"]
+  "python.analysis.typeCheckingMode": "strict",
+  "ruff.interpreter": ["${workspaceFolder}/.venv/bin/python"]
 }
