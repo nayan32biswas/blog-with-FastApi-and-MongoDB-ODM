@@ -3,6 +3,10 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - mongo.yaml
+
+patches:
+  - path: ingress-patch.yaml
 
 images:
   - name: blog-app
@@ -11,11 +15,13 @@ images:
 
 configMapGenerator:
   - name: blog-app-config
+    namespace: blog-app-ns
     envs:
       - .env.properties
 
 secretGenerator:
   - name: blog-app-secrets
+    namespace: blog-app-ns
     envs:
       - .env.secrets
 

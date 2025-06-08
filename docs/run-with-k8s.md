@@ -6,6 +6,15 @@ We are using Minikube to run the Kubernetes cluster on a local device, and it's 
 
 Make sure the `minikube` is installed locally. And start the minikube service with the command `minikube start`.
 
+## Install and configure the necessary tools
+
+- `minikube start`
+- `minikube addons enable ingress` Enable the ingress
+  - `kubectl get pods -n ingress-nginx` Verify the **ingress-nginx-controller** is running.
+- `minikube ip` Get the minikube ip address to access the server.
+- `sudo vi /etc/hosts` Update the host file with `<minikube-ip> local.blog-app.com`.
+  - It will be accessible within the local device, not from the internet.
+
 ## Basic commands to run the app
 
 - Navigate to the project in the terminal.

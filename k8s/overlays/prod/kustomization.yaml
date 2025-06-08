@@ -11,11 +11,13 @@ images:
 
 configMapGenerator:
   - name: blog-app-config
+    namespace: blog-app-ns
     envs:
       - .env.properties
 
 secretGenerator:
   - name: blog-app-secrets
+    namespace: blog-app-ns
     envs:
       - .env.secrets
 
