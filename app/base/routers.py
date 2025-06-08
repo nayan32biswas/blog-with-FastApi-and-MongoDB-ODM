@@ -16,18 +16,32 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/")
-async def home_page() -> Any:
+def is_database_stable() -> bool:
     try:
         get_client().admin.command("ping")
+
+        return True
     except Exception as e:
-        logger.critical(f"Mongo Server not available. Error{e}")
+        logger.error(f"Mongo Server not available. Error: {e}")
         raise CustomException(
             status_code=status.HTTP_400_BAD_REQUEST,
             code=ExType.INTERNAL_SERVER_ERROR,
-            detail="Server is not stable",
+            detail="Database is not stable",
         ) from e
+
+
+@router.get("/")
+async def home_page() -> Any:
+    is_database_stable()
+
     return {"message": "Server alive"}
+
+
+@router.get("/health")
+def health_check() -> Any:
+    is_database_stable()
+
+    return {"status": "ok"}
 
 
 @router.post("/api/v1/upload-image", status_code=status.HTTP_201_CREATED)

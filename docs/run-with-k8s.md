@@ -22,3 +22,5 @@ Make sure the `minikube` is installed locally. And start the minikube service wi
 - `minikube image load fastapi_blog_prod:latest` Load the new image into the minikube. It will be used by the k8s locally.
 - `cp k8s/example.env.secrets ./k8s/overlays/dev/.env.secrets && cp k8s/example.env.properties ./k8s/overlays/dev/.env.properties` Copy the example config and secrets to the targeted folder. Modify the file content if required.
 - `kubectl apply -k k8s/dev` Run the application including the database.
+- `kubectl config set-context --current --namespace=blog-app-ns` Set the namespace as default.
+- To restart the change after changing the code in the application you might need to remove the image from the minikube.

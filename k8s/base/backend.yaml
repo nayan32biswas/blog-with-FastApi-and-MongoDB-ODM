@@ -52,6 +52,22 @@ spec:
           volumeMounts:
             - name: media-storage
               mountPath: /app/media
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
       volumes:
         - name: media-storage
           persistentVolumeClaim:
