@@ -42,7 +42,9 @@ async def create_comments(
 ) -> Any:
     post = post_service.get_post_details_or_404(slug, user.id)
 
-    comment = comment_service.create_comment(post.id, user.id, comment_data.description)
+    comment = comment_service.create_comment(
+        user_id=user.id, post_id=post.id, description=comment_data.description
+    )
 
     comment.user = user
     return CommentOut(**comment.model_dump()).model_dump()
