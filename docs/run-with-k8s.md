@@ -21,6 +21,19 @@ Make sure the `minikube` is installed locally. And start the minikube service wi
 - `docker build -t fastapi_blog_prod:latest -f Dockerfile.prod .` Build the Docker image.
 - `minikube image load fastapi_blog_prod:latest` Load the new image into the minikube. It will be used by the k8s locally.
 - `cp k8s/example.env.secrets ./k8s/overlays/dev/.env.secrets && cp k8s/example.env.properties ./k8s/overlays/dev/.env.properties` Copy the example config and secrets to the targeted folder. Modify the file content if required.
-- `kubectl apply -k k8s/dev` Run the application including the database.
+- `kubectl apply -k k8s/overlays/dev` Run the application including the database.
 - `kubectl config set-context --current --namespace=blog-app-ns` Set the namespace as default.
 - To restart the change after changing the code in the application you might need to remove the image from the minikube.
+
+## Minikube Dashboard
+
+To open the minikube dashboard execute the command `minikube dashboard`.
+
+## Stop all services by namespace
+
+- `kubectl get deployments -n <namespace> -o name | xargs -I {} kubectl scale -n <namespace> {} --replicas=0`
+
+## Delete all resources
+
+- `kubectl get namespace` List all name space.
+- `kubectl delete namespace <namespace>` Delete resources by namespace.

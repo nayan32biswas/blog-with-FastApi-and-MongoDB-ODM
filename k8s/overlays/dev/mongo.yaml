@@ -64,9 +64,11 @@ metadata:
   name: mongo-service # This is the hostname for mongodb. It will be used in the MONGO_URL.
   namespace: blog-app-ns
 spec:
+  type: NodePort
   selector:
     app: mongo
   ports:
     - protocol: TCP
       port: 27017
       targetPort: 27017
+      nodePort: 30017 # This port will be exposed on the host machine (must be between 30000-32767)
