@@ -113,9 +113,9 @@ async def update_user(
     user_details = User.find_one({"_id": user.id})
 
     user_details = update_partially(user_details, user_data)
-    user_details.update()  # type: ignore
+    user_details.update()
 
-    return UserOut(**user_details.model_dump())  # type: ignore
+    return UserOut(**user_details.model_dump())
 
 
 @router.get("/api/v1/users/{username}", response_model=UserOut)
