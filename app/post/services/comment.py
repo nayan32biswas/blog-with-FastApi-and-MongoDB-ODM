@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import status
@@ -14,35 +14,38 @@ from app.user.models import User
 logger = logging.getLogger(__name__)
 
 
-def update_total_comment(post_id: Any, val: int) -> None:
-    Post.update_one({"_id": ODMObjectId(post_id)}, {"$inc": {"total_comment": val}})
+async def update_total_comment(post_id: Any, val: int) -> None:
+    await Post.aupdate_one(
+        {"_id": ODMObjectId(post_id)}, {"$inc": {"total_comment": val}}
+    )
 
 
-def get_comments(
+async def get_comments(
     post_id: ODMObjectId,
     limit: int,
     after: str | ODMObjectId | None = None,
-) -> Iterator[Comment]:
+) -> AsyncIterator[Comment]:
     filter: dict[str, Any] = {"post_id": post_id}
 
     if after:
         filter["_id"] = {"$lt": ODMObjectId(after)}
 
-    comment_qs = Comment.find(filter, sort=(("_id", -1),), limit=limit)
+    comment_qs = Comment.afind(filter, sort=(("_id", -1),), limit=limit)
 
     return comment_qs
 
 
-def load_comments_with_details(
-    comment_qs: Iterator[Comment],
+async def load_comments_with_details(
+    comment_qs: AsyncIterator[Comment],
 ) -> tuple[ODMObjectId | None, list[dict[str, Any]]]:
-    comments = Comment.load_related(comment_qs, fields=["user"])
+    comments = await Comment.aload_related(comment_qs, fields=["user"])
 
     user_ids = list(
         {replies.user_id for comment in comments for replies in comment.replies}
     )
     users_dict = {
-        user.id: user.model_dump() for user in User.find({"_id": {"$in": user_ids}})
+        user.id: user.model_dump()
+        async for user in User.afind({"_id": {"$in": user_ids}})
     }
 
     results: list[dict[str, Any]] = []
@@ -61,23 +64,23 @@ def load_comments_with_details(
     return next_cursor, results
 
 
-def create_comment(
+async def create_comment(
     user_id: ODMObjectId,
     post_id: ODMObjectId,
     description: str,
 ) -> Comment:
-    comment = Comment(
+    comment = await Comment(
         user_id=user_id,
         post_id=post_id,
         description=description,
-    ).create()
+    ).acreate()
 
-    update_total_comment(post_id, 1)
+    await update_total_comment(post_id, 1)
 
     return comment
 
 
-def get_comment_details_or_404(
+async def get_comment_details_or_404(
     comment_id: ODMObjectId,
     post_id: ODMObjectId | None = None,
 ) -> Comment:
@@ -85,18 +88,18 @@ def get_comment_details_or_404(
     if post_id:
         filter["post_id"] = post_id
 
-    comment: Comment = get_object_or_404(Comment, filter)
+    comment: Comment = await get_object_or_404(Comment, filter)
 
     return comment
 
 
-def update_comment(
+async def update_comment(
     comment_id: ODMObjectId | str,
     user_id: ODMObjectId,
     post_id: ODMObjectId | None,
     description: str,
 ) -> Comment:
-    comment = get_comment_details_or_404(ODMObjectId(comment_id), post_id)
+    comment = await get_comment_details_or_404(ODMObjectId(comment_id), post_id)
 
     if comment.user_id != user_id:
         raise CustomException(
@@ -106,15 +109,15 @@ def update_comment(
         )
 
     comment.description = description
-    comment.update()
+    await comment.aupdate()
 
     return comment
 
 
-def delete_comment(
+async def delete_comment(
     comment_id: ODMObjectId | str, user_id: ODMObjectId, post_id: ODMObjectId
 ) -> None:
-    comment = get_comment_details_or_404(ODMObjectId(comment_id), post_id)
+    comment = await get_comment_details_or_404(ODMObjectId(comment_id), post_id)
 
     if comment.user_id != user_id:
         raise CustomException(
@@ -123,14 +126,14 @@ def delete_comment(
             detail="You don't have access to delete this comment.",
         )
 
-    comment.delete()
-    update_total_comment(post_id, -1)
+    await comment.adelete()
+    await update_total_comment(post_id, -1)
 
 
-def create_reply(
+async def create_reply(
     comment_id: ODMObjectId | str, user_id: ODMObjectId, description: str
 ) -> EmbeddedReply:
-    comment = get_comment_details_or_404(ODMObjectId(comment_id))
+    comment = await get_comment_details_or_404(ODMObjectId(comment_id))
 
     if len(comment.replies) >= 100:
         # Limit the number of replies to 100 for a single comment
@@ -141,12 +144,12 @@ def create_reply(
         )
 
     reply = EmbeddedReply(id=ODMObjectId(), user_id=user_id, description=description)
-    comment.update(raw={"$push": {"replies": reply.model_dump()}})
+    await comment.aupdate(raw={"$push": {"replies": reply.model_dump()}})
 
     return reply
 
 
-def update_reply(
+async def update_reply(
     comment_id: ODMObjectId | str,
     reply_id: ODMObjectId | str,
     user_id: ODMObjectId,
@@ -154,7 +157,7 @@ def update_reply(
 ) -> bool:
     reply_id = ODMObjectId(reply_id)
 
-    update_comment = Comment.update_one(
+    update_comment = await Comment.aupdate_one(
         {
             "_id": ODMObjectId(comment_id),
             "replies.id": reply_id,
@@ -174,14 +177,14 @@ def update_reply(
     return True
 
 
-def delete_reply(
+async def delete_reply(
     comment_id: ODMObjectId | str,
     reply_id: ODMObjectId | str,
     user_id: ODMObjectId,
 ) -> bool:
     reply_id = ODMObjectId(reply_id)
 
-    update_comment = Comment.update_one(
+    update_comment = await Comment.aupdate_one(
         {
             "_id": ODMObjectId(comment_id),
             "replies": {

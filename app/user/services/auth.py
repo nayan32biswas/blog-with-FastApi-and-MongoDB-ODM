@@ -16,8 +16,8 @@ class AuthService(StaticBase):
         return pwd_context.hash(password)
 
     @classmethod
-    def authenticate_user(cls, username: str, password: str) -> User | None:
-        user = User.find_one({"username": username})
+    async def authenticate_user(cls, username: str, password: str) -> User | None:
+        user = await User.afind_one({"username": username})
 
         if not user:
             return None

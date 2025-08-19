@@ -30,8 +30,8 @@ class TokenType(str, Enum):
 
 def _get_token_data(token: str) -> TokenData:
     payload: Any = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    id: str = payload.get("id")
-    random_str: str = payload.get("random_str")
+    id: str | None = payload.get("id")
+    random_str: str | None = payload.get("random_str")
     if id is None or random_str is None:
         raise credentials_exception
     token_type = payload.get("token_type")
@@ -44,7 +44,9 @@ def _get_token_data(token: str) -> TokenData:
     return TokenData(id=id, random_str=random_str)
 
 
-async def get_authenticated_token(token: str = Depends(oauth2_scheme)) -> TokenData:
+async def get_authenticated_token(
+    token: str | None = Depends(oauth2_scheme),
+) -> TokenData:
     try:
         if token is None:
             raise credentials_exception
@@ -56,7 +58,7 @@ async def get_authenticated_token(token: str = Depends(oauth2_scheme)) -> TokenD
 async def get_authenticated_user(
     token_data: TokenData = Depends(get_authenticated_token),
 ) -> User:
-    user = User.find_one(
+    user = await User.afind_one(
         {"_id": ObjectId(token_data.id), "random_str": token_data.random_str},
         projection={"user_links": False, "bio": False},
     )
@@ -72,7 +74,7 @@ async def get_authenticated_user(
 
 
 async def get_authenticated_token_or_none(
-    token: str = Depends(oauth2_scheme_or_none),
+    token: str | None = Depends(oauth2_scheme_or_none),
 ) -> TokenData | None:
     try:
         if token is None:
@@ -87,7 +89,7 @@ async def get_authenticated_user_or_none(
 ) -> User | None:
     if not token_data:
         return None
-    user = User.find_one(
+    user = await User.afind_one(
         {"_id": ObjectId(token_data.id), "random_str": token_data.random_str}
     )
     if user and user.is_active:

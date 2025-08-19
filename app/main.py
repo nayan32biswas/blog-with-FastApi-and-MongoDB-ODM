@@ -1,9 +1,11 @@
+import asyncio
+from contextlib import asynccontextmanager
 from logging.config import dictConfig
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from mongodb_odm import connect, disconnect
+from mongodb_odm import adisconnect, connect
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.base import config
@@ -18,7 +20,18 @@ from app.post import routers as post_routers
 from app.user import routers as user_routers
 
 dictConfig(config.log_config)
-app: Any = FastAPI(debug=config.DEBUG, lifespan=config.lifespan)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # type: ignore
+    connect(config.MONGO_URL, async_is_enabled=True)
+
+    yield
+
+    await adisconnect()
+
+
+app: Any = FastAPI(debug=config.DEBUG, lifespan=lifespan)
 
 app.include_router(base_routers.router, tags=["base"])
 app.include_router(post_routers.router, tags=["post"])
@@ -43,6 +56,9 @@ if __name__ == "__main__":
     """CLI"""
     from cli.main import app as cli_app
 
-    connect(config.MONGO_URL)
-    cli_app()
-    disconnect()
+    async def initialize_cli() -> Any:
+        connect(config.MONGO_URL, async_is_enabled=True)
+        cli_app()
+        await adisconnect()
+
+    asyncio.run(initialize_cli())

@@ -63,7 +63,7 @@ class TokenService(StaticBase):
         return cls.create_refresh_token(data=data)
 
     @classmethod
-    def create_access_token_from_refresh_token(cls, refresh_token: str) -> str:
+    async def create_access_token_from_refresh_token(cls, refresh_token: str) -> str:
         if not refresh_token:
             raise invalid_refresh_token
 
@@ -76,7 +76,7 @@ class TokenService(StaticBase):
         if token_type is None or token_type != TokenType.REFRESH:
             raise invalid_refresh_token
 
-        user = User.find_one(
+        user = await User.afind_one(
             {"_id": ObjectId(payload["id"]), "random_str": payload["random_str"]}
         )
         if user is None:
@@ -87,8 +87,8 @@ class TokenService(StaticBase):
         return access_token
 
 
-def token_response(username: str, password: str) -> Any:
-    user = AuthService.authenticate_user(username, password)
+async def token_response(username: str, password: str) -> Any:
+    user = await AuthService.authenticate_user(username, password)
     if not user or user.is_active is False:
         raise CustomException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -99,7 +99,7 @@ def token_response(username: str, password: str) -> Any:
     access_token = TokenService.create_access_token_from_user(user)
     refresh_token = TokenService.create_refresh_token_from_user(user)
 
-    user.update(raw={"$set": {"last_login": datetime.now()}})
+    await user.aupdate(raw={"$set": {"last_login": datetime.now()}})
 
     return {
         "token_type": "Bearer",

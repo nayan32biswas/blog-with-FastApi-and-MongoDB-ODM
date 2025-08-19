@@ -15,17 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/posts/{slug}/comments")
-def get_comments(
+async def get_comments(
     slug: str,
     limit: int = Query(default=20, le=100),
     after: ObjectIdStr | None = Query(default=None),
     user: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
     user_id = user.id if user else None
-    post = post_service.get_post_details_or_404(slug, user_id)
+    post = await post_service.get_post_details_or_404(slug, user_id)
 
-    comment_qs = comment_service.get_comments(post.id, limit, after)
-    next_cursor, results = comment_service.load_comments_with_details(comment_qs)
+    comment_qs = await comment_service.get_comments(post.id, limit, after)
+    next_cursor, results = await comment_service.load_comments_with_details(comment_qs)
 
     return {"after": ObjectIdStr(next_cursor), "results": results}
 
@@ -40,9 +40,9 @@ async def create_comments(
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = post_service.get_post_details_or_404(slug, user.id)
+    post = await post_service.get_post_details_or_404(slug, user.id)
 
-    comment = comment_service.create_comment(
+    comment = await comment_service.create_comment(
         user_id=user.id, post_id=post.id, description=comment_data.description
     )
 
@@ -57,9 +57,9 @@ async def update_comments(
     comment_data: CommentIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = post_service.get_post_details_or_404(slug, user.id)
+    post = await post_service.get_post_details_or_404(slug, user.id)
 
-    _ = comment_service.update_comment(
+    _ = await comment_service.update_comment(
         comment_id=comment_id,
         post_id=post.id,
         user_id=user.id,
@@ -75,9 +75,9 @@ async def delete_comments(
     comment_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = post_service.get_post_details_or_404(slug, user.id)
+    post = await post_service.get_post_details_or_404(slug, user.id)
 
-    comment_service.delete_comment(
+    await comment_service.delete_comment(
         comment_id=comment_id,
         post_id=post.id,
         user_id=user.id,
@@ -96,7 +96,7 @@ async def create_replies(
     reply_data: ReplyIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    reply = comment_service.create_reply(
+    reply = await comment_service.create_reply(
         comment_id=comment_id,
         user_id=user.id,
         description=reply_data.description,
@@ -120,7 +120,7 @@ async def update_replies(
     reply_data: ReplyIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    comment_service.update_reply(
+    await comment_service.update_reply(
         comment_id=comment_id,
         reply_id=reply_id,
         user_id=user.id,
@@ -139,7 +139,7 @@ async def delete_replies(
     reply_id: ObjectIdStr,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    comment_service.delete_reply(
+    await comment_service.delete_reply(
         comment_id=comment_id,
         reply_id=reply_id,
         user_id=user.id,

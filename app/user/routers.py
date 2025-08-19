@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
     "/api/v1/registration", status_code=status.HTTP_201_CREATED, response_model=UserOut
 )
 async def registration(data: Registration) -> Any:
-    user = user_service.create_user(
+    user = await user_service.create_user(
         username=data.username,
         full_name=data.full_name,
         plain_password=data.password,
@@ -45,19 +45,19 @@ async def registration(data: Registration) -> Any:
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
-    return token_service.token_response(form_data.username, form_data.password)
+    return await token_service.token_response(form_data.username, form_data.password)
 
 
 @router.post("/api/v1/token")
 async def login(data: LoginIn) -> Any:
-    return token_service.token_response(data.username, data.password)
+    return await token_service.token_response(data.username, data.password)
 
 
 @router.post("/api/v1/update-access-token")
 async def update_access_token(
     data: UpdateAccessTokenIn = Body(...),
 ) -> Any:
-    access_token = TokenService.create_access_token_from_refresh_token(
+    access_token = await TokenService.create_access_token_from_refresh_token(
         data.refresh_token
     )
     return {"access_token": access_token}
@@ -79,7 +79,7 @@ async def change_password(
 
     hash_password = AuthService.get_password_hash(data.new_password)
 
-    user.update(raw={"$set": {"password": hash_password}})
+    await user.aupdate(raw={"$set": {"password": hash_password}})
 
     return {"message": "Password changed successfully."}
 
@@ -87,7 +87,7 @@ async def change_password(
 @router.put("/api/v1/logout-from-all-device")
 async def logout_from_all_device(user: User = Depends(get_authenticated_user)) -> Any:
     user.random_str = User.new_random_str()
-    user.update()
+    await user.aupdate()
 
     return {"message": "Logged out."}
 
@@ -101,7 +101,7 @@ async def get_me(user: User = Depends(get_authenticated_user)) -> Any:
 async def get_user_details(
     user: User = Depends(get_authenticated_user),
 ) -> UserDetailsOut:
-    user_details = User.find_one({"_id": user.id})
+    user_details = await User.afind_one({"_id": user.id})
 
     return UserDetailsOut(**user_details.model_dump())  # type: ignore
 
@@ -110,10 +110,10 @@ async def get_user_details(
 async def update_user(
     user_data: UserDetailsIn, user: User = Depends(get_authenticated_user)
 ) -> Any:
-    user_details = User.find_one({"_id": user.id})
+    user_details = await User.afind_one({"_id": user.id})
 
     user_details = update_partially(user_details, user_data)
-    user_details.update()
+    await user_details.aupdate()
 
     return UserOut(**user_details.model_dump())
 
@@ -123,7 +123,7 @@ async def ger_user_public_profile(
     username: str,
     _: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
-    public_user: User = get_object_or_404(User, filter={"username": username})
+    public_user: User = await get_object_or_404(User, filter={"username": username})
     user_dump = public_user.model_dump()
 
     return PublicUserProfile(**user_dump)

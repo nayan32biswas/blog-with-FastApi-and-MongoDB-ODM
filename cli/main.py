@@ -1,16 +1,16 @@
 import typer
-from mongodb_odm import apply_indexes
+from mongodb_odm.utils.apply_indexes import async_apply_indexes
 
 app = typer.Typer()
 
 
 @app.command()
-def create_indexes() -> None:
-    apply_indexes()
+async def create_indexes() -> None:
+    await async_apply_indexes()
 
 
 @app.command()
-def populate_data(
+async def populate_data(
     total_user: int = typer.Option(100),
     total_post: int = typer.Option(100),
 ) -> None:

@@ -28,7 +28,7 @@ async def create_topics(
     topic_data: TopicIn,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    topic, _ = post_service.get_or_create_topic(
+    topic, _ = await post_service.get_or_create_topic(
         topic_name=topic_data.name, user_id=user.id
     )
     if not topic:
@@ -49,7 +49,7 @@ async def get_topics(
     q: str | None = Query(default=None),
     _: User | None = Depends(get_authenticated_user_or_none),
 ) -> dict[str, Any]:
-    topic_qs = post_service.get_topics(
+    topic_qs = await post_service.get_topics(
         limit=limit,
         after=after,
         q=q,
@@ -58,7 +58,7 @@ async def get_topics(
     results: list[dict[str, Any]] = []
     next_cursor = None
 
-    for topic in topic_qs:
+    async for topic in topic_qs:
         next_cursor = topic.id
         results.append(TopicOut(**topic.model_dump()).model_dump())
 
@@ -75,7 +75,7 @@ async def get_topics(
 async def create_posts(
     post_data: PostCreate, user: User = Depends(get_authenticated_user)
 ) -> Any:
-    post = post_service.create_post(
+    post = await post_service.create_post(
         user,
         title=post_data.title,
         topics=post_data.topics,
@@ -97,7 +97,7 @@ async def get_posts(
     username: str | None = Query(default=None),
     user: User | None = Depends(get_authenticated_user_or_none),
 ) -> dict[str, Any]:
-    post_qs = post_service.get_posts(
+    post_qs = await post_service.get_posts(
         limit=limit,
         after=after,
         topics=topics,
@@ -109,7 +109,7 @@ async def get_posts(
     results: list[dict[str, Any]] = []
     next_cursor = None
 
-    for post in Post.load_related(post_qs):
+    for post in await Post.aload_related(post_qs):
         next_cursor = post.id
         results.append(PostListOut(**post.model_dump()).model_dump())
 
@@ -124,12 +124,12 @@ async def get_post_details(
     user: User | None = Depends(get_authenticated_user_or_none),
 ) -> Any:
     user_id = user.id if user else None
-    post = post_service.get_post_details_or_404(slug, user_id)
+    post = await post_service.get_post_details_or_404(slug, user_id)
 
-    post.author = User.find_one({"_id": post.author_id})
+    post.author = await User.afind_one({"_id": post.author_id})
     post.topics = [
         TopicOut(**topic.model_dump())
-        for topic in Topic.find({"_id": {"$in": post.topic_ids}})
+        async for topic in Topic.afind({"_id": {"$in": post.topic_ids}})
     ]
 
     return PostDetailsOut(**post.model_dump()).model_dump()
@@ -141,7 +141,7 @@ async def update_posts(
     post_data: PostUpdate,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = post_service.get_post_details_or_404(slug, user.id)
+    post = await post_service.get_post_details_or_404(slug, user.id)
 
     if post.author_id != user.id:
         raise CustomException(
@@ -150,7 +150,7 @@ async def update_posts(
             detail="You don't have access to update this post.",
         )
 
-    post = post_service.update_post(user, post, post_data)
+    post = await post_service.update_post(user, post, post_data)
 
     return {"message": "Post Updated"}
 
@@ -160,7 +160,7 @@ async def delete_post(
     slug: str,
     user: User = Depends(get_authenticated_user),
 ) -> Any:
-    post = post_service.get_post_details_or_404(slug, user.id)
+    post = await post_service.get_post_details_or_404(slug, user.id)
 
     if post.author_id != user.id:
         raise CustomException(
@@ -169,6 +169,6 @@ async def delete_post(
             detail="You don't have access to delete this post.",
         )
 
-    post_service.delete_post(post)
+    await post_service.delete_post(post)
 
     return {"message": "Deleted"}
