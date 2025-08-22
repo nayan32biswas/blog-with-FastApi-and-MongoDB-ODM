@@ -1,19 +1,18 @@
 import logging
-import multiprocessing
 import random
 import string
 from datetime import datetime
-from functools import lru_cache
 from typing import Any
 from uuid import uuid4
 
 from bson import ObjectId
 from faker import Faker
-from mongodb_odm import InsertOne, apply_indexes
+from mongodb_odm import InsertOne
 from mongodb_odm.connection import db
+from mongodb_odm.utils.apply_indexes import async_apply_indexes
 from slugify import slugify
 
-from app.base.utils.decorator import timing
+from app.base.utils.decorator import async_lru_cache, async_timing
 from app.post.models import Comment, EmbeddedReply, Post, Reaction, Topic
 from app.post.utils import get_post_description_from_str
 from app.user.models import User
@@ -22,30 +21,19 @@ from app.user.services.auth import AuthService
 fake = Faker()
 log = logging.getLogger(__name__)
 
-PROCESSORS = max(multiprocessing.cpu_count() - 2, 2)
 WRITE_OPS_LIMIT = 10000
 
-users = [
+DEFAULT_USERS = [
     {"username": "username_1", "full_name": fake.name(), "password": "password-one"},
     {"username": "username_2", "full_name": fake.name(), "password": "password-two"},
 ]
 
 
-def rand_str(N: int = 12) -> str:
+def rand_str(total: int = 12) -> str:
     return "".join(
         random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
-        for _ in range(N)
+        for _ in range(total)
     )
-
-
-def get_range(N: int) -> list[int]:
-    block_size = N // PROCESSORS
-    val = [block_size for _ in range(PROCESSORS)]
-
-    for i in range(N % PROCESSORS):
-        val[i] += 1
-
-    return val
 
 
 def get_random_range(total: int, min_item: int, max_item: int) -> tuple[int, int]:
@@ -59,27 +47,27 @@ def get_hash_password(_: Any) -> Any:
     return AuthService.get_password_hash(fake.password())
 
 
-@lru_cache
-def get_user_ids() -> list[Any]:
-    return [user["_id"] for user in User.find_raw(projection={"_id": 1})]
+@async_lru_cache(maxsize=1)
+async def get_user_ids() -> list[Any]:
+    return [user["_id"] async for user in User.afind_raw(projection={"_id": 1})]
 
 
-@lru_cache
-def get_topic_ids() -> list[Any]:
-    return [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
+@async_lru_cache(maxsize=1)
+async def get_topic_ids() -> list[Any]:
+    return [topic["_id"] async for topic in Topic.afind_raw(projection={"_id": 1})]
 
 
-@lru_cache
-def get_post_ids() -> list[Any]:
-    return [post["_id"] for post in Post.find_raw(projection={"_id": 1})]
+@async_lru_cache(maxsize=1)
+async def get_post_ids() -> list[Any]:
+    return [post["_id"] async for post in Post.afind_raw(projection={"_id": 1})]
 
 
-def _create_users(total_user: Any) -> bool:
-    hash_passwords = []
+async def _create_users(total_user: Any) -> bool:
+    hash_passwords: list[Any] = []
     for _ in range(10):
         hash_passwords.append(get_hash_password(0))
 
-    write_users = []
+    write_users: list[Any] = []
     for i in range(total_user):
         write_users.append(
             InsertOne(
@@ -94,38 +82,37 @@ def _create_users(total_user: Any) -> bool:
                 )
             )
         )
+
         if len(write_users) >= WRITE_OPS_LIMIT:
-            User.bulk_write(requests=write_users)
+            await User.abulk_write(requests=write_users)
             write_users = []
+
     if write_users:
-        User.bulk_write(requests=write_users)
+        await User.abulk_write(requests=write_users)
         write_users = []
     return True
 
 
-@timing
-def create_users(N: int) -> None:
-    for user in users:
-        if User.exists({"username": user["username"]}) is False:
-            User(
+@async_timing
+async def create_users(total: int) -> None:
+    for user in DEFAULT_USERS:
+        if await User.aexists({"username": user["username"]}) is False:
+            await User(
                 username=user["username"],
                 full_name=user["full_name"],
                 password=AuthService.get_password_hash(user["password"]),
                 random_str=User.new_random_str(),
                 joining_date=datetime.now(),
-            ).create()
-    N -= 2
+            ).acreate()
 
-    numbers = get_range(N)
-    with multiprocessing.Pool(processes=PROCESSORS) as pool:
-        _ = pool.map(_create_users, numbers)
+    await _create_users(total - len(DEFAULT_USERS))
 
-    log.info(f"{N} user created")
+    log.info(f"{total} user created")
 
 
-def create_topics(N: int) -> None:
-    data_set = {" ".join(fake.words(random.randint(1, 3))) for _ in range(N)}
-    if Topic.exists() is True:
+async def create_topics(total: int) -> None:
+    data_set = {" ".join(fake.words(random.randint(1, 3))) for _ in range(total)}
+    if await Topic.aexists() is True:
         log.info("Topic already exists")
         return
 
@@ -133,10 +120,12 @@ def create_topics(N: int) -> None:
         InsertOne(
             Topic.to_mongo(Topic(name=value, slug=f"{slugify(value)}-{ObjectId()}"))
         )
-        for idx, value in enumerate(data_set)
+        for value in data_set
     ]
+
     if write_topics:
-        Topic.bulk_write(requests=write_topics)
+        await Topic.abulk_write(requests=write_topics)
+
     log.info(f"{len(data_set)} topic created")
 
 
@@ -153,15 +142,15 @@ def get_post() -> dict[str, Any]:
     }
 
 
-def _create_posts(total_post: Any) -> bool:
-    user_ids = get_user_ids()
-    topic_ids = [topic["_id"] for topic in Topic.find_raw(projection={"_id": 1})]
+async def _create_posts(total_post: Any) -> bool:
+    user_ids = await get_user_ids()
+    topic_ids = [topic["_id"] async for topic in Topic.afind_raw(projection={"_id": 1})]
 
     random.shuffle(user_ids)
     random.shuffle(topic_ids)
     total_user, total_topic = len(user_ids), len(topic_ids)
 
-    write_posts = []
+    write_posts: list[Any] = []
     for i in range(total_post):
         topic_lo, topic_hi = get_random_range(total_topic, 5, 10)
         post_data = get_post()
@@ -177,32 +166,33 @@ def _create_posts(total_post: Any) -> bool:
                 )
             )
         )
+
         if len(write_posts) >= WRITE_OPS_LIMIT:
-            Post.bulk_write(requests=write_posts)
+            await Post.abulk_write(requests=write_posts)
             write_posts = []
+
     if write_posts:
-        Post.bulk_write(requests=write_posts)
+        await Post.abulk_write(requests=write_posts)
+
     return True
 
 
-@timing
-def create_posts(N: int) -> None:
-    numbers = get_range(N)
-    with multiprocessing.Pool(processes=PROCESSORS) as pool:
-        _ = pool.map(_create_posts, numbers)
+@async_timing
+async def create_posts(total: int) -> None:
+    await _create_posts(total)
 
-    log.info(f"{N} post inserted")
+    log.info(f"{total} post inserted")
 
 
-def _create_reactions(total_reaction: Any) -> None:
-    user_ids = get_user_ids()
-    post_ids = get_post_ids()
+async def _create_reactions(total_reaction: Any) -> None:
+    user_ids = await get_user_ids()
+    post_ids = await get_post_ids()
 
     total_post, total_user = len(post_ids), len(user_ids)
     random.shuffle(post_ids)
     random.shuffle(user_ids)
 
-    write_reactions = []
+    write_reactions: list[Any] = []
     for i in range(total_reaction):
         lo, hi = get_random_range(total_user, 20, 100)
         write_reactions.append(
@@ -215,34 +205,34 @@ def _create_reactions(total_reaction: Any) -> None:
                 )
             )
         )
+
         if len(write_reactions) >= WRITE_OPS_LIMIT:
-            Reaction.bulk_write(requests=write_reactions)
+            await Reaction.abulk_write(requests=write_reactions)
             write_reactions = []
+
     if write_reactions:
-        Reaction.bulk_write(requests=write_reactions)
+        await Reaction.abulk_write(requests=write_reactions)
         write_reactions = []
 
 
-@timing
-def create_reactions() -> None:
-    N = Post.count_documents()
+@async_timing
+async def create_reactions() -> None:
+    n = await Post.acount_documents()
 
-    numbers = get_range(N)
-    with multiprocessing.Pool(processes=PROCESSORS) as pool:
-        _ = pool.map(_create_reactions, numbers)
+    await _create_reactions(n)
 
-    log.info(f"{N} reaction inserted")
+    log.info(f"{n} reaction inserted")
 
 
-def _create_comments(total_comment: Any) -> None:
-    user_ids = get_user_ids()
-    post_ids = get_post_ids()
+async def _create_comments(total_comment: Any) -> None:
+    user_ids = await get_user_ids()
+    post_ids = await get_post_ids()
 
     total_post, total_user = len(post_ids), len(user_ids)
     random.shuffle(post_ids)
     random.shuffle(user_ids)
 
-    write_comments = []
+    write_comments: list[Any] = []
     for i in range(total_comment):
         post_id = post_ids[i % total_post]
         total_comment = random.randint(1, random.randint(1, random.randint(1, 100)))
@@ -266,45 +256,42 @@ def _create_comments(total_comment: Any) -> None:
                 )
             )
         if len(write_comments) >= WRITE_OPS_LIMIT:
-            Comment.bulk_write(requests=write_comments)
+            await Comment.abulk_write(requests=write_comments)
             write_comments = []
 
     if write_comments:
-        Comment.bulk_write(requests=write_comments)
+        await Comment.abulk_write(requests=write_comments)
 
 
-@timing
-def create_comments() -> None:
-    total_post = Post.count_documents()
-    N = total_post // 3
+@async_timing
+async def create_comments() -> None:
+    total_post = await Post.acount_documents()
+    n = total_post // 3
 
-    numbers = get_range(N)
-    for num in numbers:
-        with multiprocessing.Pool(processes=PROCESSORS) as pool:
-            _ = pool.map(_create_comments, get_range(num))
+    await _create_comments(n)
 
-    log.info(f"{N} comment inserted")
+    log.info(f"{n} comment inserted")
 
 
-@timing
-def populate_dummy_data(
+@async_timing
+async def populate_dummy_data(
     total_user: int = 100, total_post: int = 100, is_unittest: bool = False
 ) -> None:
     log.info("Applying indexes...")
-    apply_indexes()
+    await async_apply_indexes()
 
     log.info("Inserting data...")
 
-    create_users(total_user)
-    create_topics(min(max(total_post // 10, 10), 100000))
-    create_posts(total_post)
+    await create_users(total_user)
+    await create_topics(min(max(total_post // 10, 10), 100000))
+    await create_posts(total_post)
     if not is_unittest:
-        create_reactions()
-        create_comments()
+        await create_reactions()
+        await create_comments()
 
     log.info("Data insertion complete")
 
 
-def clean_data() -> None:
-    db().command("dropDatabase")
+async def clean_data() -> None:
+    await db().command("dropDatabase")  # type: ignore
     log.info("Database deleted")

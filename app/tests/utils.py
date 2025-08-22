@@ -9,7 +9,7 @@ from app.base import config
 from app.main import app
 from app.user.models import User
 from app.user.services.token import TokenService
-from cli.management_command.data_population import users
+from cli.management_command.data_population import DEFAULT_USERS
 
 logger = logging.getLogger(__name__)
 client = TestClient(app)
@@ -17,7 +17,7 @@ client = TestClient(app)
 
 @cache
 def get_user() -> User:
-    return User.get({"username": users[0]["username"]})
+    return User.get({"username": DEFAULT_USERS[0]["username"]})
 
 
 def get_auth_header(access_token: str) -> dict[str, Any]:
