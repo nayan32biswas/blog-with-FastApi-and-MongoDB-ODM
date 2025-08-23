@@ -1,7 +1,6 @@
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
-from app.main import app
 from app.tests.endpoints import Endpoints
 from app.tests.user.helper import (
     NEW_FULL_NAME,
@@ -12,13 +11,11 @@ from app.tests.user.helper import (
 from app.user.models import User
 from app.user.services.token import TokenService
 
-client = TestClient(app)
 
+async def test_registration_and_auth(async_client: AsyncClient) -> None:
+    _ = await User.adelete_many({"username": NEW_USERNAME})
 
-def test_registration_and_auth() -> None:
-    _ = User.delete_many({"username": NEW_USERNAME})
-
-    response = client.post(
+    response = await async_client.post(
         Endpoints.REGISTRATION,
         json={
             "username": NEW_USERNAME,
@@ -28,19 +25,19 @@ def test_registration_and_auth() -> None:
     )
     assert response.status_code == status.HTTP_201_CREATED
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.TOKEN, json={"username": NEW_USERNAME, "password": NEW_PASS}
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["access_token"]
 
-    _ = User.delete_many({"username": NEW_USERNAME})
+    _ = await User.adelete_many({"username": NEW_USERNAME})
 
 
-def test_duplicate_registration() -> None:
-    _ = User.delete_many({"username": NEW_USERNAME})
+async def test_duplicate_registration(async_client: AsyncClient) -> None:
+    _ = await User.adelete_many({"username": NEW_USERNAME})
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.REGISTRATION,
         json={
             "username": NEW_USERNAME,
@@ -50,7 +47,7 @@ def test_duplicate_registration() -> None:
     )
     assert response.status_code == status.HTTP_201_CREATED
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.REGISTRATION,
         json={
             "username": NEW_USERNAME,
@@ -60,22 +57,22 @@ def test_duplicate_registration() -> None:
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    _ = User.delete_many({"username": NEW_USERNAME})
+    _ = await User.adelete_many({"username": NEW_USERNAME})
 
 
-def test_update_access_token() -> None:
-    user = create_new_user()
+async def test_update_access_token(async_client: AsyncClient) -> None:
+    user = await create_new_user()
     refresh_token = TokenService.create_refresh_token_from_user(user)
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.UPDATE_ACCESS_TOKEN,
         json={"refresh_token": refresh_token},
     )
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_logout_from_all_device() -> None:
-    user = create_new_user()
+async def test_logout_from_all_device(async_client: AsyncClient) -> None:
+    user = await create_new_user()
     access_token = TokenService.create_access_token_from_user(user)
     refresh_token = TokenService.create_refresh_token_from_user(user)
 
@@ -83,40 +80,42 @@ def test_logout_from_all_device() -> None:
         "Authorization": f"Bearer {access_token}",
     }
 
-    response = client.get(Endpoints.ME, headers=headers)
+    response = await async_client.get(Endpoints.ME, headers=headers)
     assert response.status_code == status.HTTP_200_OK
 
-    response = client.put(Endpoints.LOGOUT_FROM_ALL_DEVICES, headers=headers)
+    response = await async_client.put(
+        Endpoints.LOGOUT_FROM_ALL_DEVICES, headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
 
-    response = client.get(Endpoints.ME, headers=headers)
+    response = await async_client.get(Endpoints.ME, headers=headers)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.UPDATE_ACCESS_TOKEN, json={"refresh_token": refresh_token}
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_token_validation() -> None:
+async def test_token_validation(async_client: AsyncClient) -> None:
     # Try to get me without token
-    response = client.get(Endpoints.ME)
+    response = await async_client.get(Endpoints.ME)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     invalid_access_token = TokenService.create_access_token({})
     invalid_refresh_token = TokenService.create_refresh_token({})
-    response = client.get(
+    response = await async_client.get(
         Endpoints.ME, headers={"Authorization": f"Bearer {invalid_access_token}"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    response = client.get(
+    response = await async_client.get(
         Endpoints.ME, headers={"Authorization": f"Bearer {invalid_refresh_token}"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_change_password() -> None:
-    user = create_new_user()
+async def test_change_password(async_client: AsyncClient) -> None:
+    user = await create_new_user()
     access_token = TokenService.create_access_token_from_user(user)
 
     headers = {
@@ -126,11 +125,13 @@ def test_change_password() -> None:
     updated_pass = "updated-pass"
 
     payload = {"current_password": NEW_PASS, "new_password": updated_pass}
-    response = client.post(Endpoints.CHANGE_PASSWORD, json=payload, headers=headers)
+    response = await async_client.post(
+        Endpoints.CHANGE_PASSWORD, json=payload, headers=headers
+    )
 
     assert response.status_code == status.HTTP_200_OK
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.TOKEN,
         json={"username": NEW_USERNAME, "password": NEW_PASS},
     )
@@ -138,7 +139,7 @@ def test_change_password() -> None:
         "User should get error with new password"
     )
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.TOKEN,
         json={"username": NEW_USERNAME, "password": updated_pass},
     )
@@ -146,4 +147,4 @@ def test_change_password() -> None:
         "User should be able to login with updated password"
     )
 
-    _ = User.delete_many({"username": NEW_USERNAME})
+    _ = await User.adelete_many({"username": NEW_USERNAME})

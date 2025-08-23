@@ -1,11 +1,11 @@
 import logging
 import os
-from functools import cache
 from typing import Any
 
 from fastapi.testclient import TestClient
 
 from app.base import config
+from app.base.utils.decorator import async_lru_cache
 from app.main import app
 from app.user.models import User
 from app.user.services.token import TokenService
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 client = TestClient(app)
 
 
-@cache
-def get_user() -> User:
-    return User.get({"username": DEFAULT_USERS[0]["username"]})
+@async_lru_cache()
+async def get_user() -> User:
+    return await User.aget({"username": DEFAULT_USERS[0]["username"]})
 
 
 def get_auth_header(access_token: str) -> dict[str, Any]:
@@ -32,9 +32,9 @@ def get_header_by_user(user: User) -> dict[str, Any]:
     return get_auth_header(access_token)
 
 
-@cache
-def get_header() -> dict[str, Any]:
-    user = get_user()
+@async_lru_cache()
+async def get_header() -> dict[str, Any]:
+    user = await get_user()
 
     return get_header_by_user(user)
 
@@ -43,5 +43,5 @@ def get_test_file_path() -> str:
     return os.path.join(config.BASE_DIR, "app/tests/files")
 
 
-def get_other_user(current_user: User) -> User:
-    return User.get_random_one({"_id": {"$ne": current_user.id}})
+async def get_other_user(current_user: User) -> User:
+    return await User.aget_random_one({"_id": {"$ne": current_user.id}})

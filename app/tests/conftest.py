@@ -1,30 +1,34 @@
 import logging
-from typing import Any
+from collections.abc import AsyncGenerator
 
-import pytest
-from fastapi.testclient import TestClient
-from mongodb_odm import connect, disconnect
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from mongodb_odm import adisconnect, connect
 
 from app.base import config
 from app.main import app
-from cli.management_command.data_population import clean_data, populate_dummy_data
 
 logger = logging.getLogger(__name__)
-client = TestClient(app)
 
 
-@pytest.fixture(scope="session", autouse=True)
-async def onetime_setup() -> Any:
+@pytest_asyncio.fixture(autouse=True)
+async def db_connection() -> AsyncGenerator[None, None]:
     """
-    This fixture runs once per test session to set up the database connection
-    and populate it with dummy data.
+    This fixture establishes a database connection for each test function.
     """
+    # Connect to test database with async enabled for this test
+    connect(config.TEST_MONGO_URL, async_is_enabled=True)
 
-    connect(config.TEST_MONGO_URL)
+    yield
 
-    await clean_data()
-    await populate_dummy_data(total_user=10, total_post=10, is_unittest=True)
+    # Disconnect after test
+    await adisconnect()
 
-    yield None
 
-    disconnect()
+@pytest_asyncio.fixture
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
+    """Create an async client for testing"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac

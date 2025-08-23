@@ -1,6 +1,7 @@
 from faker import Faker
 from fastapi import status
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.main import app
 from app.post.models import Reaction
@@ -12,30 +13,34 @@ client = TestClient(app)
 fake = Faker()
 
 
-def test_reactions() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
+async def test_reactions(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
 
-    response = client.post(
-        Endpoints.REACTIONS.format(slug=post.slug), headers=get_header()
+    response = await async_client.post(
+        Endpoints.REACTIONS.format(slug=post.slug), headers=await get_header()
     )
     assert response.status_code == status.HTTP_201_CREATED
-    assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is True
+    assert (
+        await Reaction.aexists({"post_id": post.id, "user_ids": test_user.id}) is True
+    )
 
     # Delete reaction
-    response = client.delete(
-        Endpoints.REACTIONS.format(slug=post.slug), headers=get_header()
+    response = await async_client.delete(
+        Endpoints.REACTIONS.format(slug=post.slug), headers=await get_header()
     )
     assert response.status_code == status.HTTP_200_OK
-    assert Reaction.exists({"post_id": post.id, "user_ids": user.id}) is False
+    assert (
+        await Reaction.aexists({"post_id": post.id, "user_ids": test_user.id}) is False
+    )
 
 
-def test_reactions_auth() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
+async def test_reactions_auth(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
 
-    response = client.post(Endpoints.REACTIONS.format(slug=post.slug))
+    response = await async_client.post(Endpoints.REACTIONS.format(slug=post.slug))
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    response = client.delete(Endpoints.REACTIONS.format(slug=post.slug))
+    response = await async_client.delete(Endpoints.REACTIONS.format(slug=post.slug))
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -1,8 +1,7 @@
 from faker import Faker
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
-from app.main import app
 from app.post.models import Comment, Post
 from app.tests.endpoints import Endpoints
 from app.tests.post.helper import (
@@ -12,53 +11,54 @@ from app.tests.post.helper import (
 )
 from app.tests.utils import get_header, get_header_by_user, get_other_user, get_user
 
-client = TestClient(app)
 fake = Faker()
 
 
-def test_get_comments() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
+async def test_get_comments(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
 
-    response = client.get(Endpoints.COMMENTS.format(slug=post.slug))
+    response = await async_client.get(Endpoints.COMMENTS.format(slug=post.slug))
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_create_comment_on_any_post() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
+async def test_create_comment_on_any_post(
+    async_client: AsyncClient,
+) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
 
     # Comment on others post valid action
-    post = Post.get_random_one({"author_id": {"$ne": user.id}})
-    response = client.post(
+    post = await Post.aget_random_one({"author_id": {"$ne": test_user.id}})
+    response = await async_client.post(
         Endpoints.COMMENTS.format(slug=post.slug),
         json={"description": "Unittest"},
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_201_CREATED
 
 
-def test_update_comment() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
-    comment = create_comment(user.id, post.id)
+async def test_update_comment(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
+    comment = await create_comment(test_user.id, post.id)
 
     updated_text = "Updated Text"
 
-    response = client.put(
+    response = await async_client.put(
         Endpoints.COMMENTS_DETAIL.format(slug=post.slug, comment_id=comment.id),
         json={"description": updated_text},
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_200_OK
 
-    updated_comment = Comment.find_one({"_id": comment.id})
+    updated_comment = await Comment.afind_one({"_id": comment.id})
     assert updated_comment and updated_comment.description == updated_text
 
     # Try to update others comment should get 403
-    other_user = get_other_user(user)
+    other_user = await get_other_user(test_user)
 
-    response = client.put(
+    response = await async_client.put(
         Endpoints.COMMENTS_DETAIL.format(slug=post.slug, comment_id=comment.id),
         json={"description": fake.text()},
         headers=get_header_by_user(other_user),
@@ -66,71 +66,71 @@ def test_update_comment() -> None:
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_delete_comment() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
-    comment = create_comment(user.id, post.id)
+async def test_delete_comment(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
+    comment = await create_comment(test_user.id, post.id)
 
-    response = client.delete(
+    response = await async_client.delete(
         Endpoints.COMMENTS_DETAIL.format(slug=post.slug, comment_id=comment.id),
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_200_OK
 
     # Try to delete others comment should get 403
-    other_user = get_other_user(user)
-    comment = create_comment(other_user.id, post.id)
+    other_user = await get_other_user(test_user)
+    comment = await create_comment(other_user.id, post.id)
 
-    response = client.delete(
+    response = await async_client.delete(
         Endpoints.COMMENTS_DETAIL.format(slug=post.slug, comment_id=comment.id),
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_create_replies() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
-    comment = create_comment(user.id, post.id)
+async def test_create_replies(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
+    comment = await create_comment(test_user.id, post.id)
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.REPLIES.format(slug=post.slug, comment_id=comment.id),
         json={"description": fake.text()},
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_201_CREATED
 
     # Reply on others comment
-    other_user = get_other_user(user)
-    other_comment = create_comment(other_user.id, post.id)
+    other_user = await get_other_user(test_user)
+    other_comment = await create_comment(other_user.id, post.id)
 
-    response = client.post(
+    response = await async_client.post(
         Endpoints.REPLIES.format(slug=post.slug, comment_id=other_comment.id),
         json={"description": fake.text()},
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_201_CREATED
 
 
-def test_update_replies() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
-    comment = create_comment(user.id, post.id)
-    reply = create_reply(user.id, comment, description=fake.text())
+async def test_update_replies(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
+    comment = await create_comment(test_user.id, post.id)
+    reply = await create_reply(test_user.id, comment, description=fake.text())
 
-    response = client.put(
+    response = await async_client.put(
         Endpoints.REPLIES_DETAIL.format(
             slug=post.slug, comment_id=comment.id, reply_id=reply.id
         ),
         json={"description": fake.text()},
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_200_OK
 
     # Try to update others replies. Should get 403
-    other_user = get_other_user(user)
+    other_user = await get_other_user(test_user)
 
-    response = client.put(
+    response = await async_client.put(
         Endpoints.REPLIES_DETAIL.format(
             slug=post.slug, comment_id=comment.id, reply_id=reply.id
         ),
@@ -140,28 +140,28 @@ def test_update_replies() -> None:
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_delete_replies() -> None:
-    user = get_user()
-    post = create_public_post(user.id)
-    comment = create_comment(user.id, post.id)
-    reply = create_reply(user.id, comment, description=fake.text())
+async def test_delete_replies(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    post = await create_public_post(test_user.id)
+    comment = await create_comment(test_user.id, post.id)
+    reply = await create_reply(test_user.id, comment, description=fake.text())
 
-    response = client.delete(
+    response = await async_client.delete(
         Endpoints.REPLIES_DETAIL.format(
             slug=post.slug, comment_id=comment.id, reply_id=reply.id
         ),
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_200_OK
 
     # Try to delete others replies. Should get 403
-    other_user = get_other_user(user)
-    reply = create_reply(other_user.id, comment, description=fake.text())
+    other_user = await get_other_user(test_user)
+    reply = await create_reply(other_user.id, comment, description=fake.text())
 
-    response = client.delete(
+    response = await async_client.delete(
         Endpoints.REPLIES_DETAIL.format(
             slug=post.slug, comment_id=comment.id, reply_id=reply.id
         ),
-        headers=get_header(),
+        headers=await get_header(),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN

@@ -1,32 +1,33 @@
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
-from app.main import app
 from app.tests.endpoints import Endpoints
 from app.tests.utils import get_header, get_user
 from cli.management_command.data_population import DEFAULT_USERS
 
-client = TestClient(app)
 
-
-def test_get_me() -> None:
-    response = client.get(Endpoints.ME, headers=get_header())
+async def test_get_me(async_client: AsyncClient) -> None:
+    response = await async_client.get(Endpoints.ME, headers=await get_header())
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["username"] == DEFAULT_USERS[0]["username"]
 
 
-def test_get_user_details() -> None:
-    user = get_user()
-    response = client.get(Endpoints.USER_PROFILE, headers=get_header())
+async def test_get_user_details(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    response = await async_client.get(
+        Endpoints.USER_PROFILE, headers=await get_header()
+    )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["username"] == user.username
+    assert response.json()["username"] == test_user.username
 
 
-def test_update_user() -> None:
+async def test_update_user(async_client: AsyncClient) -> None:
     new_full_name = "New Name"
-    response = client.patch(
-        Endpoints.USER_UPDATE, json={"full_name": new_full_name}, headers=get_header()
+    response = await async_client.patch(
+        Endpoints.USER_UPDATE,
+        json={"full_name": new_full_name},
+        headers=await get_header(),
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -34,9 +35,13 @@ def test_update_user() -> None:
     assert response.json()["username"] == DEFAULT_USERS[0]["username"]
 
 
-def test_user_public_profile() -> None:
-    user = get_user()
-    response = client.get(Endpoints.PUBLIC_PROFILE.format(username=user.username))
+async def test_user_public_profile(async_client: AsyncClient) -> None:
+    test_user = await get_user()
+    response = await async_client.get(
+        Endpoints.PUBLIC_PROFILE.format(username=test_user.username)
+    )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["username"] == user.username, "'username' does not match"
+    assert response.json()["username"] == test_user.username, (
+        "'username' does not match"
+    )

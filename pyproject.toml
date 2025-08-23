@@ -25,6 +25,7 @@ dependencies = [
 ]
 
 # Optional dev dependencies
+# uv add --optional dev <packages>
 [project.optional-dependencies]
 dev = [
     "coverage[toml]>=7.10.4",
@@ -34,6 +35,7 @@ dev = [
     "mypy>=1.17.1",
     "pre-commit>=4.3.0",
     "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
     "ruff>=0.12.9",
     "types-passlib>=1.7.7.20250602",
     "types-python-slugify>=8.0.2.20240310",
@@ -45,6 +47,9 @@ dev = [
 [tool.uv.sources]
 mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm", rev = "main" }
 # constraint = "constraints.txt"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 # Tool configurations
 [tool.coverage.run]
