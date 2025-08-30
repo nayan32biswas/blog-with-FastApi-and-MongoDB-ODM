@@ -25,6 +25,7 @@ services:
     # env_file: .env
     volumes:
       - ./:/code
+      - ./.venv_docker:/code/.venv # overrides the folder
     depends_on:
       - db
     networks:
