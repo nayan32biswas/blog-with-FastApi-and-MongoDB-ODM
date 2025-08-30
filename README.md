@@ -77,8 +77,8 @@ Make sure you have docker installed and active.
 
 ### Populate Database with Docker
 
-- `docker compose run --rm api uv run --extra dev -m app.main populate-data --total-user 100 --total-post 100` Populate database with 100 user and 100 post with others necessary information
-- `docker compose run --rm api uv run --extra dev -m app.main delete-data` Clean database if necessary.
+- `docker compose run --rm api uv run -m app.main populate-data --total-user 100 --total-post 100` Populate database with 100 user and 100 post with others necessary information
+- `docker compose run --rm api uv run -m app.main delete-data` Clean database if necessary.
 
 ## Visit API Documentation
 
@@ -162,8 +162,8 @@ docker start fastapi-blog-container
 ## Populate Data
 
 ```bash
-docker run --rm --env-file .env fastapi-blog-image uv run --extra dev -m app.main delete-data
-docker run --rm --env-file .env fastapi-blog-image uv run --extra dev -m app.main populate-data --total-user 10000 --total-post 10000
+docker run --rm --env-file .env fastapi-blog-image uv run -m app.main delete-data
+docker run --rm --env-file .env fastapi-blog-image uv run -m app.main populate-data --total-user 10000 --total-post 10000
 ```
 
 ## Load Test
@@ -199,7 +199,7 @@ The connection URL will be
 docker build -t fastapi_blog:latest -f Dockerfile .
 
 docker run --rm --network blog-database --env-file .env fastapi_blog:latest \
- uv run --extra dev -m app.main populate-data --total-user=100000 --total-post=100000
+ uv run -m app.main populate-data --total-user=100000 --total-post=100000
 ```
 
 ### Configure and Run Instance

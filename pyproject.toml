@@ -24,16 +24,17 @@ dependencies = [
     "uvicorn>=0.35.0",
 ]
 
-# Optional dev dependencies
-[project.optional-dependencies]
+# Local dev dependencies
+[dependency-groups]
 dev = [
-    "coverage[toml]>=7.10.4",
+    "coverage[toml]>=7.10.6",
     "debugpy>=1.8.16",
-    "Faker>=37.5.3",
+    "faker>=37.5.3",
     "httpx>=0.28.1",
     "mypy>=1.17.1",
     "pre-commit>=4.3.0",
     "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
     "ruff>=0.12.9",
     "types-passlib>=1.7.7.20250602",
     "types-python-slugify>=8.0.2.20240310",
@@ -42,9 +43,9 @@ dev = [
 # Optional uv-specific configuration
 [tool.uv]
 
+# uv add git+https://github.com/nayan32biswas/mongodb-odm --branch main
 [tool.uv.sources]
-mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm", rev = "main" }
-# constraint = "constraints.txt"
+mongodb-odm = { git = "https://github.com/nayan32biswas/mongodb-odm", branch = "main" }
 
 # Tool configurations
 [tool.coverage.run]
