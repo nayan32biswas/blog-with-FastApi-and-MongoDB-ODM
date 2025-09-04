@@ -3,6 +3,6 @@
 set -e
 set -x
 
-uv run --extra dev mypy app
-uv run --extra dev ruff check app scripts
-uv run --extra dev ruff format app --check
+uv run ty check app
+uv run ruff check app scripts
+uv run ruff format app --check

@@ -1,5 +1,5 @@
 # Install pre-commit hooks for linting and formatting. Run this command first time for each device.
-# `uv run --extra dev pre-commit install && uv run --extra dev pre-commit run --all-files`
+# `uv run pre-commit install && uv run pre-commit run --all-files`
 
 # Uninstall pre-commit hooks if you want to remove them.
 # `pre-commit uninstall`
