@@ -12,7 +12,7 @@ Make sure the `minikube` is installed locally. And start the minikube service wi
 - `minikube addons enable ingress` Enable the ingress
   - `kubectl get pods -n ingress-nginx` Verify the **ingress-nginx-controller** is running.
 - `minikube ip` Get the minikube ip address to access the server.
-- `sudo vi /etc/hosts` Update the host file with `<minikube-ip> local.blog-app.com`.
+- `sudo vi /etc/hosts` Update the host file with `<minikube-ip> blog.example.com`.
   - It will be accessible within the local device, not from the internet.
 
 ## Basic commands to run the app
@@ -24,10 +24,19 @@ Make sure the `minikube` is installed locally. And start the minikube service wi
 - `kubectl apply -k k8s/overlays/dev` Run the application including the database.
 - `kubectl config set-context --current --namespace=blog-app-ns` Set the namespace as default.
 - To restart the change after changing the code in the application you might need to remove the image from the minikube.
+- `minikube service mongo-service -n blog-app-ns --url` Get the running mongodb IP and port to connection form *MongoDB Compass*
 
 ## Minikube Dashboard
 
 To open the minikube dashboard execute the command `minikube dashboard`.
+
+## Common Commands
+
+- `kubectl get namespace` List all name space.
+- `kubectl get -n blog-app-ns pod` List all pod for a namespace.
+- `kubectl get -n blog-app-ns deployment` List all deployment for a namespace.
+- `kubectl get -n blog-app-ns svc` List all services for a namespace.
+- `kubectl logs -n blog-app-ns <pod_name>` get pod logs
 
 ## Stop all services by namespace
 
@@ -37,3 +46,4 @@ To open the minikube dashboard execute the command `minikube dashboard`.
 
 - `kubectl get namespace` List all name space.
 - `kubectl delete namespace <namespace>` Delete resources by namespace.
+- `minikube delete --all --purge` Delete Everything
