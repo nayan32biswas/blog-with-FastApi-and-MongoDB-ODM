@@ -1,8 +1,8 @@
 import os
 
 PORT = int(os.environ.get("PORT", "8000"))
-GUNICORN_WORKERS = int(os.environ.get("GUNICORN_WORKERS", "2"))
-GUNICORN_THREADS = int(os.environ.get("GUNICORN_THREADS", "4"))
+GUNICORN_WORKERS = int(os.environ.get("GUNICORN_WORKERS", "4"))
+GUNICORN_THREADS = int(os.environ.get("GUNICORN_THREADS", "2"))
 
 bind = f":{PORT}"
 workers = GUNICORN_WORKERS

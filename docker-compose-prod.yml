@@ -17,7 +17,7 @@ services:
       resources:
         limits:
           cpus: "2"
-          memory: 1gb
+          memory: 2gb
       restart_policy:
           condition: on-failure
           delay: 3s
@@ -43,7 +43,7 @@ services:
       resources:
         limits:
           cpus: "2"
-          memory: 1gb
+          memory: 2gb
 
 volumes:
   blog-db:
