@@ -22,5 +22,19 @@
     }
   },
   "python.analysis.typeCheckingMode": "strict",
-  "ruff.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+  "ruff.interpreter": ["${workspaceFolder}/.venv/bin/python"],
+  "ruff.enable": true,
+  "ruff.lint.select": [
+    "B", // flake8-bugbear
+    "C4", // flake8-comprehensions
+    "C90", // mccabe complexity
+    "E", // pycodestyle errors
+    "F", // flake8
+    "I", // isort
+    "N", // pep8-naming
+    "TC", // flake8-type-checking
+    "UP", // pyupgrade
+    "W" // pycodestyle warnings
+  ],
+  "ruff.lint.ignore": ["B008", "N818"]
 }

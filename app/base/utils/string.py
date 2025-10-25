@@ -5,15 +5,15 @@ from random import choice
 from typing import Any
 
 
-def rand_str(N: int = 12) -> str:
+def rand_str(n: int = 12) -> str:
     return "".join(
         choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
-        for _ in range(N)
+        for _ in range(n)
     )
 
 
-def rand_slug_str(N: int = 12) -> str:
-    return "".join(choice(string.ascii_lowercase + string.digits) for _ in range(N))
+def rand_slug_str(n: int = 12) -> str:
+    return "".join(choice(string.ascii_lowercase + string.digits) for _ in range(n))
 
 
 def str_to_regex(s: str) -> Any:

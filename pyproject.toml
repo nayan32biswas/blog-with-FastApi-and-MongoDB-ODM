@@ -71,8 +71,20 @@ missing-argument = "ignore" # It was raising error for code """TopicOut(**dict_d
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "C4", "B", "UP"]
-ignore = ["B008"]
+select = [
+    # https://docs.astral.sh/ruff/rules/
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "C90", # mccabe complexity
+    "E", # pycodestyle errors
+    "F", # flake8
+    "I", # isort
+    "N", # pep8-naming
+    "TC", # flake8-type-checking
+    "UP", # pyupgrade
+    "W", # pycodestyle warnings
+]
+ignore = ["B008", "N818"]
 
 [tool.ruff.lint.isort]
 known-third-party = ["mongodb_odm", "pydantic", "fastapi"]

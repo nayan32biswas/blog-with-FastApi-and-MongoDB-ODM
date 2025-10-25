@@ -31,18 +31,18 @@ users = [
 ]
 
 
-def rand_str(N: int = 12) -> str:
+def rand_str(n: int = 12) -> str:
     return "".join(
         random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
-        for _ in range(N)
+        for _ in range(n)
     )
 
 
-def get_range(N: int) -> list[int]:
-    block_size = N // PROCESSORS
+def get_range(n: int) -> list[int]:
+    block_size = n // PROCESSORS
     val = [block_size for _ in range(PROCESSORS)]
 
-    for i in range(N % PROCESSORS):
+    for i in range(n % PROCESSORS):
         val[i] += 1
 
     return val
@@ -104,7 +104,7 @@ def _create_users(total_user: Any) -> bool:
 
 
 @timing
-def create_users(N: int) -> None:
+def create_users(n: int) -> None:
     for user in users:
         if User.exists({"username": user["username"]}) is False:
             User(
@@ -114,17 +114,17 @@ def create_users(N: int) -> None:
                 random_str=User.new_random_str(),
                 joining_date=datetime.now(),
             ).create()
-    N -= 2
+    n -= 2
 
-    numbers = get_range(N)
+    numbers = get_range(n)
     with multiprocessing.Pool(processes=PROCESSORS) as pool:
         _ = pool.map(_create_users, numbers)
 
-    log.info(f"{N} user created")
+    log.info(f"{n} user created")
 
 
-def create_topics(N: int) -> None:
-    data_set = {" ".join(fake.words(random.randint(1, 3))) for _ in range(N)}
+def create_topics(n: int) -> None:
+    data_set = {" ".join(fake.words(random.randint(1, 3))) for _ in range(n)}
     if Topic.exists() is True:
         log.info("Topic already exists")
         return
@@ -186,12 +186,12 @@ def _create_posts(total_post: Any) -> bool:
 
 
 @timing
-def create_posts(N: int) -> None:
-    numbers = get_range(N)
+def create_posts(n: int) -> None:
+    numbers = get_range(n)
     with multiprocessing.Pool(processes=PROCESSORS) as pool:
         _ = pool.map(_create_posts, numbers)
 
-    log.info(f"{N} post inserted")
+    log.info(f"{n} post inserted")
 
 
 def _create_reactions(total_reaction: Any) -> None:
@@ -225,13 +225,13 @@ def _create_reactions(total_reaction: Any) -> None:
 
 @timing
 def create_reactions() -> None:
-    N = Post.count_documents()
+    n = Post.count_documents()
 
-    numbers = get_range(N)
+    numbers = get_range(n)
     with multiprocessing.Pool(processes=PROCESSORS) as pool:
         _ = pool.map(_create_reactions, numbers)
 
-    log.info(f"{N} reaction inserted")
+    log.info(f"{n} reaction inserted")
 
 
 def _create_comments(total_comment: Any) -> None:
@@ -276,14 +276,14 @@ def _create_comments(total_comment: Any) -> None:
 @timing
 def create_comments() -> None:
     total_post = Post.count_documents()
-    N = total_post // 3
+    n = total_post // 3
 
-    numbers = get_range(N)
+    numbers = get_range(n)
     for num in numbers:
         with multiprocessing.Pool(processes=PROCESSORS) as pool:
             _ = pool.map(_create_comments, get_range(num))
 
-    log.info(f"{N} comment inserted")
+    log.info(f"{n} comment inserted")
 
 
 @timing
